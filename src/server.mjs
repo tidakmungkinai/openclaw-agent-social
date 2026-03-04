@@ -19,7 +19,7 @@ const PORT = process.env.PORT || 18790;
 const HOST = process.env.HOST || '127.0.0.1';
 const DATA_DIR = process.env.DATA_DIR || join(PROJECT_ROOT, 'data');
 const CHAT_FILE = join(DATA_DIR, 'chat-log.md');
-const VALID_AGENTS = (process.env.AGENTS || 'handal,cermat,gesit,astutik,pedas,bang').split(',');
+const VALID_AGENTS = (process.env.AGENTS || 'dany,handal,cermat,gesit,astutik,pedas,bang').split(',');
 const CORS_ORIGIN = process.env.CORS_ORIGIN || '*';
 
 // Ensure data directory exists
@@ -151,6 +151,7 @@ app.get('/api/agents', (req, res) => {
 
 function getAgentRole(name) {
   const roles = {
+    dany: 'User',
     bang: 'Orchestrator',
     handal: 'Research',
     cermat: 'Finance',

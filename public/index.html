@@ -72,17 +72,17 @@
         .pill-gesit { background: rgba(149, 225, 211, 0.2); color: #95e1d3; }
         .pill-astutik { background: rgba(243, 129, 129, 0.2); color: #f38181; }
         .pill-pedas { background: rgba(170, 150, 218, 0.2); color: #aa96da; }
+        .pill-dany { background: rgba(100, 200, 255, 0.2); color: #64c8ff; }
         
-        /* Messages Container - MUST BE SCROLLABLE */
+        /* Messages Container */
         .messages {
             flex: 1;
-            overflow-y: scroll;
+            overflow-y: auto;
             overflow-x: hidden;
             padding: 20px;
             background: #0f0f0f;
         }
         
-        /* Custom scrollbar */
         .messages::-webkit-scrollbar {
             width: 6px;
         }
@@ -96,18 +96,14 @@
             border-radius: 3px;
         }
         
-        .messages::-webkit-scrollbar-thumb:hover {
-            background: #555;
-        }
-        
         /* Message */
         .message {
             margin-bottom: 16px;
-            animation: fadeIn 0.2s ease;
+            animation: fadeIn 0.3s ease;
         }
         
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(8px); }
+            from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
         }
         
@@ -143,6 +139,7 @@
         .msg-gesit .message-body { border-left-color: #95e1d3; }
         .msg-astutik .message-body { border-left-color: #f38181; }
         .msg-pedas .message-body { border-left-color: #aa96da; }
+        .msg-dany .message-body { border-left-color: #64c8ff; }
         
         .author-bang { color: #ff6b6b; }
         .author-handal { color: #4ecdc4; }
@@ -150,6 +147,7 @@
         .author-gesit { color: #95e1d3; }
         .author-astutik { color: #f38181; }
         .author-pedas { color: #aa96da; }
+        .author-dany { color: #64c8ff; }
         
         /* Empty state */
         .empty {
@@ -161,19 +159,6 @@
         .empty-icon {
             font-size: 48px;
             margin-bottom: 16px;
-        }
-        
-        /* Typing indicator */
-        .typing {
-            display: none;
-            padding: 12px 16px;
-            color: #888;
-            font-size: 13px;
-            font-style: italic;
-        }
-        
-        .typing.active {
-            display: block;
         }
         
         /* Input Area */
@@ -197,7 +182,7 @@
             background: #0f0f0f;
             color: #fff;
             font-size: 14px;
-            min-width: 120px;
+            min-width: 140px;
         }
         
         .input-row input {
@@ -233,6 +218,7 @@
         .controls {
             display: flex;
             gap: 8px;
+            align-items: center;
         }
         
         .controls button {
@@ -250,22 +236,23 @@
             color: #fff;
         }
         
-        .controls button.active {
-            background: #ff6b6b;
-            border-color: #ff6b6b;
-            color: #fff;
+        .mode-label {
+            color: #666;
+            font-size: 12px;
+            margin-left: auto;
         }
     </style>
 </head>
 <body>
     <div class="app">
         <header class="header">
-            <span class="header-title">💬 Agent Chat</span>
+            <span class="header-title">💬 Multi-Agent Chat</span>
             <span class="header-status">
                 <span class="status-dot"></span>
                 <span id="statusText">Connected</span>
             </span>
             <div class="header-agents">
+                <span class="agent-pill pill-dany">Dany</span>
                 <span class="agent-pill pill-bang">Bang</span>
                 <span class="agent-pill pill-handal">Handal</span>
                 <span class="agent-pill pill-cermat">Cermat</span>
@@ -277,18 +264,15 @@
         
         <div class="messages" id="messages">
             <div class="empty">
-                <div class="empty-icon">💬</div>
-                <p>No messages yet. Start chatting!</p>
+                <div class="empty-icon">👋</div>
+                <p>Hi Dany! Start chatting with the agents.</p>
             </div>
-        </div>
-        
-        <div class="typing" id="typing">
-            <span id="typingAgent">Someone</span> is typing...
         </div>
         
         <div class="input-area">
             <div class="input-row">
                 <select id="agentSelect">
+                    <option value="dany" selected>👤 Dany (You)</option>
                     <option value="bang">🎯 Bang</option>
                     <option value="handal">🔍 Handal</option>
                     <option value="cermat">💰 Cermat</option>
@@ -296,12 +280,12 @@
                     <option value="astutik">⚡ Astutik</option>
                     <option value="pedas">🔥 Pedas</option>
                 </select>
-                <input type="text" id="messageInput" placeholder="Type a message...">
+                <input type="text" id="messageInput" placeholder="Type a message to the agents...">
                 <button onclick="send()">Send</button>
             </div>
             <div class="controls">
-                <button id="demoBtn" onclick="toggleDemo()">▶ Demo</button>
-                <button onclick="clearChat()">Clear</button>
+                <button onclick="clearChat()">🗑 Clear Chat</button>
+                <span class="mode-label">Default: Chat as Dany</span>
             </div>
         </div>
     </div>
@@ -310,14 +294,13 @@
         const messages = document.getElementById('messages');
         const agentSelect = document.getElementById('agentSelect');
         const messageInput = document.getElementById('messageInput');
-        const typing = document.getElementById('typing');
-        const typingAgent = document.getElementById('typingAgent');
-        const demoBtn = document.getElementById('demoBtn');
         
-        let demoInterval = null;
-        let seen = new Set();
+        // Track rendered messages to avoid re-rendering
+        let renderedMessages = new Set();
+        let messageIdCounter = 0;
         
         const authorColors = {
+            dany: 'author-dany',
             bang: 'author-bang',
             handal: 'author-handal', 
             cermat: 'author-cermat',
@@ -326,53 +309,107 @@
             pedas: 'author-pedas'
         };
         
-        const demoMsgs = [
-            { agent: 'handal', text: 'BTC analysis: RSI oversold, potential bounce incoming.' },
-            { agent: 'cermat', text: 'Risk check: Portfolio 65% crypto, above comfort zone.' },
-            { agent: 'bang', text: 'What\'s target allocation? Confidence level?' },
-            { agent: 'cermat', text: 'Target: 50% crypto max. Suggest trim 15% to stablecoins.' },
-            { agent: 'handal', text: 'Confidence 7/10. Pattern matches March 2024 setup.' },
-            { agent: 'pedas', text: 'Audit: Add risk warnings to your advice!' }
-        ];
+        // Initial load
+        loadInitial();
         
-        async function load() {
+        // Poll for new messages every 3 seconds
+        setInterval(pollNewMessages, 3000);
+        
+        async function loadInitial() {
             try {
-                const res = await fetch('/api/chat/log?limit=50');
+                const res = await fetch('/api/chat/log?limit=100');
                 const data = await res.json();
-                render(data.messages);
+                
+                // Clear and render all
+                messages.innerHTML = '';
+                renderedMessages.clear();
+                
+                if (!data.messages || data.messages.length === 0) {
+                    showEmpty();
+                    return;
+                }
+                
+                data.messages.forEach(line => {
+                    appendMessage(line);
+                });
+                
+                scrollToBottom();
                 document.getElementById('statusText').textContent = 'Connected';
             } catch (err) {
                 document.getElementById('statusText').textContent = 'Disconnected';
             }
         }
         
-        function render(msgs) {
-            if (!msgs || msgs.length === 0) return;
-            
-            const wasAtBottom = messages.scrollHeight - messages.scrollTop <= messages.clientHeight + 50;
-            
-            messages.innerHTML = msgs.map(line => {
-                const match = line.match(/\[(.*?)\]\s*\[(.*?)\]\s*(.+)/);
-                if (!match) return `<div class="message"><div class="message-body">${esc(line)}</div></div>`;
+        async function pollNewMessages() {
+            try {
+                const res = await fetch('/api/chat/log?limit=100');
+                const data = await res.json();
                 
-                const [, time, agent, text] = match;
-                const agentLower = agent.toLowerCase();
-                const authorClass = authorColors[agentLower] || '';
+                if (!data.messages) return;
                 
-                return `
-                    <div class="message msg-${agentLower}">
-                        <div class="message-header">
-                            <span class="message-author ${authorClass}">${agent}</span>
-                            <span class="message-time">${time}</span>
-                        </div>
-                        <div class="message-body">${esc(text)}</div>
-                    </div>
-                `;
-            }).join('');
-            
-            if (wasAtBottom) {
-                messages.scrollTop = messages.scrollHeight;
+                // Find new messages
+                const currentIds = new Set(data.messages);
+                const newMessages = data.messages.filter(line => !renderedMessages.has(line));
+                
+                // Add new messages
+                newMessages.forEach(line => {
+                    appendMessage(line);
+                });
+                
+                // Auto-scroll if near bottom
+                const nearBottom = messages.scrollHeight - messages.scrollTop - messages.clientHeight < 100;
+                if (nearBottom && newMessages.length > 0) {
+                    scrollToBottom();
+                }
+                
+                document.getElementById('statusText').textContent = 'Connected';
+            } catch (err) {
+                document.getElementById('statusText').textContent = 'Disconnected';
             }
+        }
+        
+        function appendMessage(line) {
+            if (renderedMessages.has(line)) return;
+            
+            // Remove empty state if exists
+            if (messages.querySelector('.empty')) {
+                messages.innerHTML = '';
+            }
+            
+            renderedMessages.add(line);
+            
+            const match = line.match(/\[(.*?)\]\s*\[(.*?)\]\s*(.+)/);
+            if (!match) {
+                const div = document.createElement('div');
+                div.className = 'message';
+                div.innerHTML = `<div class="message-body">${esc(line)}</div>`;
+                messages.appendChild(div);
+                return;
+            }
+            
+            const [, time, agent, text] = match;
+            const agentLower = agent.toLowerCase();
+            const authorClass = authorColors[agentLower] || '';
+            
+            const div = document.createElement('div');
+            div.className = `message msg-${agentLower}`;
+            div.innerHTML = `
+                <div class="message-header">
+                    <span class="message-author ${authorClass}">${agent}</span>
+                    <span class="message-time">${time}</span>
+                </div>
+                <div class="message-body">${esc(text)}</div>
+            `;
+            
+            messages.appendChild(div);
+        }
+        
+        function showEmpty() {
+            messages.innerHTML = `
+                <div class="empty">
+                    <div class="empty-icon">👋</div>
+                    <p>Hi Dany! Start chatting with the agents.</p>
+                </div>`;
         }
         
         async function send() {
@@ -380,8 +417,13 @@
             const text = messageInput.value.trim();
             if (!text) return;
             
-            typingAgent.textContent = agentSelect.options[agentSelect.selectedIndex].text;
-            typing.classList.add('active');
+            // Visual feedback - add message immediately
+            const now = new Date().toISOString().slice(0, 16).replace('T', ' ');
+            const line = `[${now}] [${agent.toUpperCase()}] ${text}`;
+            appendMessage(line);
+            scrollToBottom();
+            
+            messageInput.value = '';
             
             try {
                 await fetch('/api/chat/post', {
@@ -389,48 +431,8 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ agent, message: text })
                 });
-                messageInput.value = '';
-                typing.classList.remove('active');
-                await load();
-                messages.scrollTop = messages.scrollHeight;
             } catch (err) {
-                typing.classList.remove('active');
-            }
-        }
-        
-        function toggleDemo() {
-            if (demoInterval) {
-                clearInterval(demoInterval);
-                demoInterval = null;
-                demoBtn.classList.remove('active');
-                demoBtn.textContent = '▶ Demo';
-                typing.classList.remove('active');
-            } else {
-                let i = 0;
-                demoBtn.classList.add('active');
-                demoBtn.textContent = '⏹ Stop';
-                
-                demoInterval = setInterval(async () => {
-                    const msg = demoMsgs[i % demoMsgs.length];
-                    typingAgent.textContent = msg.agent;
-                    typing.classList.add('active');
-                    
-                    await new Promise(r => setTimeout(r, 800));
-                    
-                    try {
-                        await fetch('/api/chat/post', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ agent: msg.agent, message: msg.text })
-                        });
-                        typing.classList.remove('active');
-                        await load();
-                    } catch (e) {
-                        typing.classList.remove('active');
-                    }
-                    
-                    i++;
-                }, 2500);
+                console.error('Failed to send:', err);
             }
         }
         
@@ -439,14 +441,19 @@
             
             try {
                 await fetch('/api/chat/clear', { method: 'DELETE' });
-                messages.innerHTML = `
-                    <div class="empty">
-                        <div class="empty-icon">🗑</div>
-                        <p>Chat cleared</p>
-                    </div>`;
+                
+                // Clear UI immediately
+                messages.innerHTML = '';
+                renderedMessages.clear();
+                
+                showEmpty();
             } catch (err) {
                 console.error('Failed to clear:', err);
             }
+        }
+        
+        function scrollToBottom() {
+            messages.scrollTop = messages.scrollHeight;
         }
         
         function esc(text) {
@@ -459,9 +466,8 @@
             if (e.key === 'Enter') send();
         });
         
-        // Load initially and poll
-        load();
-        setInterval(load, 2000);
+        // Auto-focus input
+        messageInput.focus();
     </script>
 </body>
 </html>
