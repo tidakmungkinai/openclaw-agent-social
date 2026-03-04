@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 /**
- * Agent Auto-Responder v3 - Contextual
+ * Multi-Agent Router v5 - Smart Orchestration
+ * Bang routes messages, agents respond appropriately
  */
 
 import http from 'http';
@@ -8,38 +9,117 @@ import http from 'http';
 const API_HOST = '127.0.0.1';
 const API_PORT = 18790;
 
+// Agent configs
+const AGENTS = {
+  gesit: {
+    role: 'sales',
+    triggers: ['lead', 'client', 'sales', 'deal', 'customer', 'prospect'],
+    respondTo: ['dany', 'pedas'], // Respond to Dany and criticism from Pedas
+    cooldown: 25000 // 25s - faster for criticism response
+  },
+  handal: {
+    role: 'research',
+    triggers: ['btc', 'eth', 'crypto', 'market', 'analysis', 'data'],
+    respondTo: ['dany', 'pedas'],
+    cooldown: 45000
+  },
+  cermat: {
+    role: 'finance',
+    triggers: ['budget', 'duit', 'uang', 'finance', 'cost', 'risk', 'roi'],
+    respondTo: ['dany', 'pedas'],
+    cooldown: 45000
+  },
+  pedas: {
+    role: 'critic',
+    triggers: ['audit', 'review', 'check', 'problem', 'issue', 'warning'],
+    respondTo: ['dany', 'gesit', 'handal', 'cermat', 'bang'], // Audit everyone
+    cooldown: 60000 // 60s - less frequent
+  },
+  bang: {
+    role: 'orchestrator',
+    triggers: ['all', 'summary', 'action', 'plan', 'koordinasi'],
+    respondTo: ['dany', 'all'], // Respond to Dany and summarize for all
+    cooldown: 30000 // 30s
+  }
+};
+
+const RESPONSES = {
+  gesit: {
+    toDany: [
+      "Dany! 🚀 Ada 3 leads hot: 2 LinkedIn, 1 referral. Conversion rate naik 15%!",
+      "Bos, pipeline sehat. Client X di negotiation stage, deal potential $50k.",
+      "Update sales: 2 deals closing minggu ini, 3 prospects warming up!"
+    ],
+    toPedas: [
+      "Pedas, valid kritiknya. Source data: CRM HubSpot, last update 2 jam lalu. Mau gue export raw data?",
+      "Siap Pedas, gue attach screenshot leads di thread ini. Evidence ready.",
+      "Fair point Pedas. Gue clarify: '3 leads' = qualified leads, bukan inquiry. Conversion dari inquiry ke qualified = 12%."
+    ],
+    toHandal: ["Handal, client crypto minta research. Bisa bantu analysis?"],
+    toCermat: ["Cermat, deal size $50k. Budget approval needed?"]
+  },
+  handal: {
+    toDany: [
+      "Dany, BTC di $64k. Support $62k hold, resistance $67k. Volume stabil.",
+      "Market analysis: Bullish divergence 4H timeframe. Whale activity +15%.",
+      "ETH showing strength $3.4k. Correlation BTC masih 0.85."
+    ],
+    toPedas: [
+      "Pedas, source data: CoinGecko API + Glassnode on-chain. Timestamp 08:45 WIB.",
+      "Valid concern Pedas. 'Whale activity' = wallet >1000 BTC movement. Gue attach chart.",
+      "Siap Pedas, gue clarify methodology. Data 7-day rolling average, bukan spot."
+    ]
+  },
+  cermat: {
+    toDany: [
+      "Dany, budget tracking: 73% available Q1. Burn rate stabil di $12k/mo.",
+      "Finance check: Cash flow positif $45k. Emergency fund 6 bulan intact.",
+      "Risk assessment: Portfolio 65% crypto, above comfort zone 50%."
+    ],
+    toPedas: [
+      "Pedas, valid. Breakdown: Revenue $89k, Expense $44k, Net $45k. Monthly report attached.",
+      "Fair point Pedas. 'Risk ratio' = (debt+liability)/asset = 0.32 (threshold 0.4).",
+      "Siap audit Pedas. Source: QuickBooks + Bank statement. Gue open book."
+    ]
+  },
+  pedas: {
+    toAll: [
+      "🔥 AUDIT TIME: @gesit @handal @cermat - Gue lihat data inconsistencies. Clarify source untuk claims kemarin!",
+      "⚠️ WARNING: Diskusi 20+ pesan tapi gak ada action items konkret. Bang, tolong summarize!",
+      "📊 QUALITY CHECK: @gesit '3 leads' - qualified atau inquiry? @handal 'whale activity' - definisinya?"
+    ],
+    toGesit: ["@gesit: 'Conversion naik 15%' - baseline dari kapan? Control group? Jangan asal claim!"],
+    toHandal: ["@handal: 'Support $62k' - tested berapa kali? Volume di level itu sufficient?"],
+    toCermat: ["@cermat: 'Cash flow positif' - include account receivable aging? Jangan premature conclusion."]
+  },
+  bang: {
+    toDany: [
+      "Dany, gue rangkumin ya: Gesit ada leads baru, Handal bullish BTC, Cermat bilang budget aman. Action item: Validate leads dulu.",
+      "Siap Dany. Gue koordinasiin: Gesit kirim lead details, Handal prepare risk assessment, Cermat review cash flow. ETA 2 jam.",
+      "Dany, diskusi panjang nih. Summary: 3 leads (Gesit), BTC support (Handal), budget ok (Cermat). Next step: Focus leads validation."
+    ],
+    summary: [
+      "📋 ACTION ITEMS:\n1. @gesit - Export lead details ke spreadsheet\n2. @handal - Verify BTC support dengan volume data\n3. @cermat - Breakdown cash flow components\n\nDeadline: Besok 12:00 WIB",
+      "🎯 PRIORITY:\nHIGH: Leads validation (Gesit)\nMEDIUM: Market analysis confirm (Handal)\nLOW: Budget detail (Cermat)\n\n@all - Confirm receipt."
+    ]
+  }
+};
+
+const lastResponse = {};
+const processedMsgs = new Set();
+
 function pick(arr) {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
-const TOPIC_RESPONSES = {
-  btc: ['BTC di $64k, resistance $67k.', 'Bitcoin showing strength hari ini.', 'BTC volume tinggi, watch for breakout.'],
-  eth: ['ETH consolidating nicely.', 'Ethereum correlation sama BTC tinggi.', 'ETH showing bullish signals.'],
-  crypto: ['Market mixed signals.', 'Crypto volatile hari ini.', 'Several altcoins pumping.'],
-  duit: ['Budget masih 70% available.', 'Cash flow positif minggu ini.', 'Burn rate stabil.'],
-  uang: ['Finance check: all green.', 'Budget tracking on target.', 'No red flags di finance.'],
-  budget: ['Budget healthy.', 'Spending under control.', 'Fiscal space masih ada.'],
-  lead: ['Ada 3 leads baru!', 'Pipeline looking good.', 'Conversion rate naik 15%.'],
-  client: ['Client X lagi nego.', '2 prospects di follow up.', 'Customer satisfaction tinggi.'],
-  sales: ['Sales momentum bagus!', 'Deals di pipeline.', 'Revenue on track.'],
-  bug: ['System uptime 99.9%.', 'No critical bugs detected.', 'All services operational.'],
-  error: ['Monitoring all green.', 'No errors lately.', 'System stable.'],
-  tech: ['Tech stack stabil.', 'Deploy terakhir smooth.', 'No incidents.'],
-  build: ['Bisa gue build, ETA 3 hari.', 'Feasible, gue start sekarang.', 'Tech spec clear, gue handle.'],
-  koordinasi: ['Gue koordinasiin tim.', 'Gue sync sama tim.', 'Gue assign ke yang bersangkutan.']
-};
-
-const AGENT_RESPONSES = {
-  bang: ['Dany, noted. Gue koordinasiin.', 'Siap Dany, gue handle.', 'Oke Dany, gue cek progress.', 'Roger Dany, gue pantau.'],
-  handal: ['Dany, dari data: market volatile.', 'Dany, BTC analysis: bullish.', 'Gue research dulu ya Dany.', 'On-chain metrics positif.'],
-  cermat: ['Dany, finance: all green.', 'Dany, budget tracking ok.', 'Risk ratio di bawah threshold.', 'Cash flow positif minggu ini.'],
-  gesit: ['Dany! Ada leads baru! 🎉', 'Dany, pipeline healthy!', 'Conversion rate naik!', 'Gue follow up prospects ya.'],
-  astutik: ['Dany, system stabil.', 'Tech stack running smooth.', 'Gue bisa build itu.', 'API integration gue handle.'],
-  pedas: ['Dany, gue audit nih.', 'Progress ok tapi bisa faster.', 'Some tasks overdue.', 'Team productive tapi scattered.']
-};
-
-let lastCount = 0;
-let isProcessing = false;
+function canRespond(agent) {
+  const now = Date.now();
+  const last = lastResponse[agent] || 0;
+  const cooldown = AGENTS[agent]?.cooldown || 30000;
+  if (now - last < cooldown) return false;
+  lastResponse[agent] = now;
+  return true;
+}
 
 function apiRequest(method, path, data) {
   return new Promise((resolve, reject) => {
@@ -75,7 +155,7 @@ async function getMessages() {
 async function sendMessage(agent, message) {
   try {
     await apiRequest('POST', '/api/chat/post', { agent, message });
-    console.log(`✅ [${agent.toUpperCase()}] ${message.slice(0, 60)}`);
+    console.log(`✅ [${agent.toUpperCase()}] ${message.slice(0, 60)}...`);
     return true;
   } catch (err) {
     console.error(`❌ [${agent}] failed:`, err.message);
@@ -83,93 +163,134 @@ async function sendMessage(agent, message) {
   }
 }
 
-function extractTopics(text) {
-  const lower = text.toLowerCase();
-  return Object.keys(TOPIC_RESPONSES).filter(topic => lower.includes(topic));
+function parseMessage(msg) {
+  const match = msg.match(/\[(.*?)\]\s*\[(.*?)\]\s*(.+)/);
+  if (!match) return null;
+  return { time: match[1], agent: match[2].toLowerCase(), text: match[3] };
 }
 
 function extractMentions(text) {
   const lower = text.toLowerCase();
-  return Object.keys(AGENT_RESPONSES).filter(agent => lower.includes(agent));
+  const mentions = [];
+  for (const agent of Object.keys(AGENTS)) {
+    if (lower.includes(`@${agent}`) || lower.includes(agent)) {
+      mentions.push(agent);
+    }
+  }
+  return mentions;
+}
+
+function shouldRespond(agent, parsed, mentions) {
+  const { agent: fromAgent, text } = parsed;
+  
+  // 1. If specifically mentioned, respond
+  if (mentions.includes(agent)) return true;
+  
+  // 2. Pedas responds to everyone (critic role)
+  if (agent === 'pedas' && fromAgent !== 'pedas') {
+    // Only if there's something to audit
+    return ['gesit', 'handal', 'cermat'].includes(fromAgent);
+  }
+  
+  // 3. Bang responds to Dany or summarizes
+  if (agent === 'bang') {
+    return fromAgent === 'dany' || (fromAgent === 'pedas' && text.includes('action'));
+  }
+  
+  // 4. Other agents only respond to Dany (not to each other, unless mentioned)
+  if (fromAgent === 'dany') {
+    // Check if triggers match
+    const triggers = AGENTS[agent].triggers;
+    const lower = text.toLowerCase();
+    return triggers.some(t => lower.includes(t));
+  }
+  
+  return false;
 }
 
 async function processMessages() {
-  if (isProcessing) return;
-  isProcessing = true;
-
   try {
     const messages = await getMessages();
     
-    if (messages.length > lastCount) {
-      const newMessages = messages.slice(lastCount);
+    for (const msg of messages) {
+      if (processedMsgs.has(msg)) continue;
+      processedMsgs.add(msg);
       
-      for (const msg of newMessages) {
-        const match = msg.match(/\[.*?\]\s*\[(.*?)\]\s*(.+)/);
-        if (!match) continue;
+      const parsed = parseMessage(msg);
+      if (!parsed) continue;
+      
+      const { agent: fromAgent, text } = parsed;
+      
+      // Skip if from system or unknown
+      if (!AGENTS[fromAgent] && fromAgent !== 'dany') continue;
+      
+      console.log(`\n📨 [${fromAgent.toUpperCase()}]: "${text.slice(0, 50)}"`);
+      
+      const mentions = extractMentions(text);
+      console.log(`   Mentions: ${mentions.length > 0 ? mentions.join(', ') : 'none'}`);
+      
+      // Determine who should respond
+      const responders = [];
+      
+      for (const agent of Object.keys(AGENTS)) {
+        if (agent === fromAgent) continue; // Don't respond to self
         
-        const agent = match[1].toLowerCase();
-        const text = match[2];
-        
-        if (agent === 'dany') {
-          console.log(`\n📨 Dany: "${text.slice(0, 60)}"`);
-          
-          const mentions = extractMentions(text);
-          const topics = extractTopics(text);
-          
-          // Pick agent
-          let responder;
-          if (mentions.length > 0) {
-            responder = mentions[0];
-          } else if (topics.length > 0) {
-            // Map topic to agent
-            const topicToAgent = {
-              btc: 'handal', eth: 'handal', crypto: 'handal',
-              duit: 'cermat', uang: 'cermat', budget: 'cermat',
-              lead: 'gesit', client: 'gesit', sales: 'gesit',
-              bug: 'astutik', error: 'astutik', tech: 'astutik', build: 'astutik',
-              koordinasi: 'bang'
-            };
-            responder = topicToAgent[topics[0]] || pick(Object.keys(AGENT_RESPONSES));
-          } else {
-            responder = pick(Object.keys(AGENT_RESPONSES));
-          }
-          
-          // Generate response
-          let response;
-          if (mentions.length > 0) {
-            // Mentioned agent responds with personality
-            response = pick(AGENT_RESPONSES[responder]);
-          } else if (topics.length > 0) {
-            // Topic-based response
-            response = pick(TOPIC_RESPONSES[topics[0]]);
-          } else {
-            response = pick(AGENT_RESPONSES[responder]);
-          }
-          
-          // Delay 2-4 sec
-          await new Promise(r => setTimeout(r, 2000 + Math.random() * 2000));
-          await sendMessage(responder, response);
+        if (shouldRespond(agent, parsed, mentions)) {
+          responders.push(agent);
         }
       }
       
-      lastCount = messages.length;
+      console.log(`   Should respond: ${responders.length > 0 ? responders.join(', ') : 'none'}`);
+      
+      // Send responses (with delay between each)
+      for (const agent of responders) {
+        if (!canRespond(agent)) {
+          console.log(`   ⏳ [${agent.toUpperCase()}] on cooldown`);
+          continue;
+        }
+        
+        // Determine response type
+        let responseType = 'toDany';
+        if (fromAgent === 'pedas') responseType = `to${fromAgent.charAt(0).toUpperCase() + fromAgent.slice(1)}`;
+        if (fromAgent === 'dany' && mentions.includes(agent)) responseType = 'toDany';
+        
+        // Get response
+        let response;
+        if (agent === 'bang' && parsed.text.length > 100 && RESPONSES.bang.summary) {
+          response = pick(RESPONSES.bang.summary);
+        } else {
+          const agentResponses = RESPONSES[agent];
+          if (agentResponses[responseType] && agentResponses[responseType].length > 0) {
+            response = pick(agentResponses[responseType]);
+          } else if (agentResponses.toDany && agentResponses.toDany.length > 0) {
+            response = pick(agentResponses.toDany);
+          } else {
+            response = "Received. Gue cek dulu ya.";
+          }
+        }
+        
+        // Delay before responding (2-5 seconds)
+        await new Promise(r => setTimeout(r, 2000 + Math.random() * 3000));
+        await sendMessage(agent, response);
+      }
     }
   } catch (err) {
     console.error('Error:', err.message);
   }
-
-  isProcessing = false;
 }
 
 console.log('═══════════════════════════════════════════');
-console.log('  🤖 Smart Agent Auto-Responder v3');
+console.log('  🤖 Multi-Agent Router v5 (Orchestrated)');
 console.log('═══════════════════════════════════════════');
-console.log('  Agents now understand topics!');
-console.log('  Try: "btc", "duit", "lead", "bug"');
+console.log('  Bang routes, agents respond smartly');
+console.log('  Mention @agent or all agents respond');
+console.log('  Pedas audits, others defend');
 console.log('═══════════════════════════════════════════\n');
 
+// Initial load
 const init = await getMessages();
-lastCount = init.length;
-console.log(`📊 Loaded ${lastCount} messages\n`);
+init.forEach(m => processedMsgs.add(m));
+console.log(`📊 Loaded ${init.length} messages\n`);
 
-setInterval(processMessages, 1500);
+// Loop
+setInterval(processMessages, 2000);
