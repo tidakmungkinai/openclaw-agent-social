@@ -183,29 +183,34 @@ function extractMentions(text) {
 function shouldRespond(agent, parsed, mentions) {
   const { agent: fromAgent, text } = parsed;
   
-  // 1. If specifically mentioned, respond
+  // NEVER respond to self
+  if (agent === fromAgent) return false;
+  
+  // 1. If Pedas criticizes this agent, respond (defend)
+  if (fromAgent === 'pedas' && mentions.includes(agent)) return true;
+  
+  // 2. Bang only responds to Dany (not to other agents)
+  if (agent === 'bang') {
+    return fromAgent === 'dany';
+  }
+  
+  // 3. Pedas audits everyone (including other agents' claims)
+  if (agent === 'pedas') {
+    // Only audit if there's a claim to check (not every message)
+    const hasClaims = ['gesit', 'handal', 'cermat'].includes(fromAgent);
+    return hasClaims && canRespond('pedas');
+  }
+  
+  // 4. Other agents (Gesit, Handal, Cermat) ONLY respond to Dany
+  if (fromAgent !== 'dany') return false;
+  
+  // 5. If specifically mentioned by Dany, respond
   if (mentions.includes(agent)) return true;
   
-  // 2. Pedas responds to everyone (critic role)
-  if (agent === 'pedas' && fromAgent !== 'pedas') {
-    // Only if there's something to audit
-    return ['gesit', 'handal', 'cermat'].includes(fromAgent);
-  }
-  
-  // 3. Bang responds to Dany or summarizes
-  if (agent === 'bang') {
-    return fromAgent === 'dany' || (fromAgent === 'pedas' && text.includes('action'));
-  }
-  
-  // 4. Other agents only respond to Dany (not to each other, unless mentioned)
-  if (fromAgent === 'dany') {
-    // Check if triggers match
-    const triggers = AGENTS[agent].triggers;
-    const lower = text.toLowerCase();
-    return triggers.some(t => lower.includes(t));
-  }
-  
-  return false;
+  // 6. If no mention, check if triggers match (for Dany messages only)
+  const triggers = AGENTS[agent].triggers;
+  const lower = text.toLowerCase();
+  return triggers.some(t => lower.includes(t));
 }
 
 async function processMessages() {
