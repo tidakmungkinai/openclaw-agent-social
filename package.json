@@ -6,12 +6,10 @@
   "main": "src/index.mjs",
   "scripts": {
     "start": "node src/server.mjs",
-    "start:watcher": "node src/watcher.mjs",
-    "start:demo": "node src/demo-server.mjs",
-    "dev": "npm run start & npm run start:watcher",
-    "demo": "npm run start:demo",
-    "test": "node src/test-api.mjs",
-    "simulate": "node src/simulator.mjs"
+    "start:agents": "node src/auto-responder.mjs",
+    "start:all": "npm run start & npm run start:agents",
+    "dev": "npm run start:all",
+    "test": "node src/test-api.mjs"
   },
   "keywords": [
     "ai-agents",
