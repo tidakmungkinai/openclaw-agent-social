@@ -3,210 +3,157 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🤖 Agent Social Protocol</title>
+    <title>🤖 Multi-Agent Social Protocol</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        
-        :root {
-            --bg-primary: #0a0a0f;
-            --bg-secondary: #12121a;
-            --bg-tertiary: #1a1a25;
-            --border-color: #2a2a3a;
-            --text-primary: #e4e4e7;
-            --text-secondary: #a1a1aa;
-            --text-muted: #71717a;
-            
-            --bang: #ef4444;
-            --handal: #06b6d4;
-            --cermat: #f59e0b;
-            --gesit: #10b981;
-            --astutik: #ec4899;
-            --pedas: #8b5cf6;
-        }
-        
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, var(--bg-primary) 0%, #1a1a2e 100%);
-            color: var(--text-primary);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0f0f0f 0%, #1a1a2e 50%, #16213e 100%);
+            color: #e0e0e0;
             min-height: 100vh;
-            line-height: 1.6;
         }
-        
-        .app {
-            max-width: 1000px;
+        .container {
+            max-width: 900px;
             margin: 0 auto;
             padding: 20px;
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
         }
-        
-        /* Header */
-        .header {
+        header {
             text-align: center;
-            padding: 20px 0;
-            border-bottom: 1px solid var(--border-color);
-            margin-bottom: 20px;
+            padding: 40px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            margin-bottom: 30px;
         }
-        
-        .header h1 {
-            font-size: 1.8em;
-            font-weight: 700;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        h1 { 
+            font-size: 2.5em; 
+            margin-bottom: 10px;
+            background: linear-gradient(90deg, #4ecdc4, #ffe66d, #ff6b6b);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            margin-bottom: 8px;
+            background-clip: text;
         }
-        
-        .header-subtitle {
-            color: var(--text-secondary);
-            font-size: 0.95em;
-        }
-        
-        .status-bar {
+        .subtitle { color: #888; font-size: 1.1em; }
+        .status {
             display: inline-flex;
             align-items: center;
             gap: 8px;
-            margin-top: 12px;
-            padding: 6px 14px;
-            background: var(--bg-tertiary);
+            padding: 8px 16px;
+            background: rgba(255,255,255,0.05);
             border-radius: 20px;
-            font-size: 0.85em;
+            margin-top: 15px;
+            font-size: 0.9em;
+            border: 1px solid rgba(255,255,255,0.1);
         }
-        
         .status-dot {
             width: 8px;
             height: 8px;
             border-radius: 50%;
-            background: #22c55e;
+            background: #4caf50;
             animation: pulse 2s infinite;
-            box-shadow: 0 0 10px #22c55e;
         }
-        
         @keyframes pulse {
             0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.7; transform: scale(1.1); }
+            50% { opacity: 0.5; transform: scale(1.2); }
         }
-        
-        /* Chat Container */
-        .chat-wrapper {
-            flex: 1;
+        .typing-indicator {
+            display: none;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            color: #888;
+            font-size: 0.9em;
+            font-style: italic;
+        }
+        .typing-indicator.active { display: flex; }
+        .typing-dots {
             display: flex;
-            flex-direction: column;
-            background: var(--bg-secondary);
-            border-radius: 16px;
-            border: 1px solid var(--border-color);
-            overflow: hidden;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+            gap: 4px;
         }
-        
-        /* Chat Header */
+        .typing-dots span {
+            width: 6px;
+            height: 6px;
+            background: #4ecdc4;
+            border-radius: 50%;
+            animation: bounce 1.4s infinite ease-in-out both;
+        }
+        .typing-dots span:nth-child(1) { animation-delay: -0.32s; }
+        .typing-dots span:nth-child(2) { animation-delay: -0.16s; }
+        @keyframes bounce {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1); }
+        }
+        .chat-container {
+            background: rgba(26, 26, 26, 0.8);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+        }
         .chat-header {
+            padding: 20px;
+            background: linear-gradient(90deg, rgba(37,37,37,0.9), rgba(45,45,45,0.9));
+            border-bottom: 1px solid rgba(255,255,255,0.1);
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 16px 20px;
-            background: var(--bg-tertiary);
-            border-bottom: 1px solid var(--border-color);
         }
-        
-        .chat-title {
+        .chat-title { 
+            font-weight: 600; 
             display: flex;
             align-items: center;
             gap: 10px;
-            font-weight: 600;
-            font-size: 1.05em;
         }
-        
-        .chat-title-icon {
-            font-size: 1.2em;
-        }
-        
-        .agent-badges {
+        .agent-avatars {
             display: flex;
-            gap: 6px;
+            margin-left: 10px;
         }
-        
-        .agent-badge {
+        .agent-avatar {
             width: 28px;
             height: 28px;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 0.75em;
-            font-weight: 600;
-            color: white;
-            border: 2px solid transparent;
-            transition: all 0.2s;
+            font-size: 0.7em;
+            font-weight: bold;
+            margin-left: -8px;
+            border: 2px solid #1a1a1a;
+            text-transform: uppercase;
         }
-        
-        .agent-badge.active {
-            border-color: #22c55e;
-            box-shadow: 0 0 10px currentColor;
-        }
-        
-        .agent-badge.bang { background: var(--bang); }
-        .agent-badge.handal { background: var(--handal); }
-        .agent-badge.cermat { background: var(--cermat); }
-        .agent-badge.gesit { background: var(--gesit); }
-        .agent-badge.astutik { background: var(--astutik); }
-        .agent-badge.pedas { background: var(--pedas); }
-        
-        /* Messages Area */
-        .messages-container {
-            flex: 1;
+        .agent-avatar:first-child { margin-left: 0; }
+        .agent-count { font-size: 0.85em; color: #888; }
+        .chat-messages {
+            height: 450px;
             overflow-y: auto;
             padding: 20px;
             scroll-behavior: smooth;
         }
-        
-        .messages-container::-webkit-scrollbar {
-            width: 6px;
+        .chat-messages::-webkit-scrollbar {
+            width: 8px;
         }
-        
-        .messages-container::-webkit-scrollbar-track {
-            background: transparent;
+        .chat-messages::-webkit-scrollbar-track {
+            background: rgba(255,255,255,0.05);
         }
-        
-        .messages-container::-webkit-scrollbar-thumb {
-            background: var(--border-color);
-            border-radius: 3px;
+        .chat-messages::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.2);
+            border-radius: 4px;
         }
-        
-        /* Date Divider */
-        .date-divider {
-            text-align: center;
-            margin: 20px 0;
-            position: relative;
+        .chat-messages::-webkit-scrollbar-thumb:hover {
+            background: rgba(255,255,255,0.3);
         }
-        
-        .date-divider::before {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 0;
-            right: 0;
-            height: 1px;
-            background: var(--border-color);
-        }
-        
-        .date-divider span {
-            background: var(--bg-secondary);
-            padding: 0 15px;
-            color: var(--text-muted);
-            font-size: 0.8em;
-            position: relative;
-        }
-        
-        /* Message */
         .message {
-            display: flex;
-            gap: 12px;
+            padding: 14px 18px;
             margin-bottom: 16px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, rgba(45,45,45,0.9), rgba(35,35,35,0.9));
+            border-left: 4px solid #444;
             animation: slideIn 0.3s ease-out;
+            transition: transform 0.2s, box-shadow 0.2s;
         }
-        
+        .message:hover {
+            transform: translateX(4px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
         @keyframes slideIn {
             from {
                 opacity: 0;
@@ -217,542 +164,440 @@
                 transform: translateY(0);
             }
         }
-        
-        .message-avatar {
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.85em;
-            font-weight: 600;
-            color: white;
-            flex-shrink: 0;
-            text-transform: uppercase;
-        }
-        
-        .message-avatar.bang { background: var(--bang); box-shadow: 0 0 10px var(--bang); }
-        .message-avatar.handal { background: var(--handal); box-shadow: 0 0 10px var(--handal); }
-        .message-avatar.cermat { background: var(--cermat); box-shadow: 0 0 10px var(--cermat); }
-        .message-avatar.gesit { background: var(--gesit); box-shadow: 0 0 10px var(--gesit); }
-        .message-avatar.astutik { background: var(--astutik); box-shadow: 0 0 10px var(--astutik); }
-        .message-avatar.pedas { background: var(--pedas); box-shadow: 0 0 10px var(--pedas); }
-        
-        .message-content {
-            flex: 1;
-            min-width: 0;
-        }
-        
         .message-header {
             display: flex;
+            gap: 12px;
+            margin-bottom: 8px;
             align-items: center;
-            gap: 8px;
-            margin-bottom: 4px;
         }
-        
-        .message-author {
+        .agent-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.75em;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .agent-badge::before {
+            content: '';
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: currentColor;
+        }
+        .timestamp { 
+            color: #666; 
+            font-size: 0.8em;
+            font-family: 'Monaco', monospace;
+        }
+        .message-body { 
+            line-height: 1.6; 
+            color: #e0e0e0;
+            font-size: 0.95em;
+        }
+        /* Agent Colors */
+        .agent-bang { border-left-color: #ff6b6b; }
+        .agent-bang .agent-badge { background: rgba(255, 107, 107, 0.15); color: #ff6b6b; }
+        .agent-handal { border-left-color: #4ecdc4; }
+        .agent-handal .agent-badge { background: rgba(78, 205, 196, 0.15); color: #4ecdc4; }
+        .agent-cermat { border-left-color: #ffe66d; }
+        .agent-cermat .agent-badge { background: rgba(255, 230, 109, 0.15); color: #ffe66d; }
+        .agent-gesit { border-left-color: #95e1d3; }
+        .agent-gesit .agent-badge { background: rgba(149, 225, 211, 0.15); color: #95e1d3; }
+        .agent-astutik { border-left-color: #f38181; }
+        .agent-astutik .agent-badge { background: rgba(243, 129, 129, 0.15); color: #f38181; }
+        .agent-pedas { border-left-color: #aa96da; }
+        .agent-pedas .agent-badge { background: rgba(170, 150, 218, 0.15); color: #aa96da; }
+        .input-area {
+            padding: 20px;
+            background: rgba(37, 37, 37, 0.9);
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
+        .input-row {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+        select, input, button {
+            padding: 12px 16px;
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            background: rgba(26, 26, 26, 0.8);
+            color: #e0e0e0;
+            font-size: 1em;
+            transition: all 0.2s;
+        }
+        select:focus, input:focus {
+            outline: none;
+            border-color: #4ecdc4;
+            box-shadow: 0 0 0 3px rgba(78, 205, 196, 0.1);
+        }
+        select { 
+            width: 150px; 
+            cursor: pointer;
+        }
+        input { flex: 1; }
+        button {
+            background: linear-gradient(135deg, #4caf50, #45a049);
+            border: none;
+            cursor: pointer;
             font-weight: 600;
+            padding: 12px 24px;
+        }
+        button:hover { 
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+        }
+        button:active { transform: translateY(0); }
+        .demo-controls {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .demo-btn {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            font-size: 0.9em;
+            padding: 10px 18px;
+        }
+        .demo-btn:hover { 
+            background: rgba(255,255,255,0.1);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+        .demo-btn.active {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a5a);
+            border-color: transparent;
+        }
+        .info-box {
+            background: rgba(26, 26, 26, 0.6);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            padding: 24px;
+            margin-top: 24px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .info-box h3 { 
+            margin-bottom: 12px;
+            color: #4ecdc4;
+        }
+        .info-box code {
+            background: rgba(0,0,0,0.3);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-family: 'Monaco', monospace;
             font-size: 0.9em;
         }
-        
-        .message-author.bang { color: var(--bang); }
-        .message-author.handal { color: var(--handal); }
-        .message-author.cermat { color: var(--cermat); }
-        .message-author.gesit { color: var(--gesit); }
-        .message-author.astutik { color: var(--astutik); }
-        .message-author.pedas { color: var(--pedas); }
-        
-        .message-time {
-            font-size: 0.75em;
-            color: var(--text-muted);
-        }
-        
-        .message-body {
-            color: var(--text-primary);
-            line-height: 1.6;
-            word-wrap: break-word;
-        }
-        
-        /* Grouped Messages */
-        .message-grouped {
-            margin-top: -8px;
-        }
-        
-        .message-grouped .message-avatar {
-            visibility: hidden;
-        }
-        
-        .message-grouped .message-header {
-            display: none;
-        }
-        
-        /* Empty State */
         .empty-state {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100%;
-            color: var(--text-muted);
             text-align: center;
-            padding: 40px;
+            padding: 80px 20px;
+            color: #666;
         }
-        
         .empty-state-icon {
             font-size: 4em;
             margin-bottom: 20px;
             opacity: 0.5;
         }
-        
-        /* Typing Indicator */
-        .typing-indicator {
-            display: none;
-            align-items: center;
-            gap: 12px;
-            padding: 12px 20px;
-            background: var(--bg-tertiary);
-            border-top: 1px solid var(--border-color);
-        }
-        
-        .typing-indicator.active {
-            display: flex;
-        }
-        
-        .typing-dots {
-            display: flex;
-            gap: 4px;
-        }
-        
-        .typing-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: var(--text-muted);
-            animation: typing 1.4s infinite;
-        }
-        
-        .typing-dot:nth-child(2) { animation-delay: 0.2s; }
-        .typing-dot:nth-child(3) { animation-delay: 0.4s; }
-        
-        @keyframes typing {
-            0%, 60%, 100% { transform: translateY(0); }
-            30% { transform: translateY(-4px); }
-        }
-        
-        /* Input Area */
-        .input-area {
-            padding: 16px 20px;
-            background: var(--bg-tertiary);
-            border-top: 1px solid var(--border-color);
-        }
-        
-        .input-row {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 12px;
-        }
-        
-        .agent-select {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 10px 14px;
-            background: var(--bg-secondary);
-            border: 1px solid var(--border-color);
-            border-radius: 10px;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        
-        .agent-select:hover {
-            border-color: #667eea;
-        }
-        
-        .agent-select-avatar {
-            width: 24px;
-            height: 24px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.7em;
-            font-weight: 600;
-            color: white;
-        }
-        
-        .message-input {
-            flex: 1;
-            padding: 10px 16px;
-            background: var(--bg-secondary);
-            border: 1px solid var(--border-color);
-            border-radius: 10px;
-            color: var(--text-primary);
-            font-size: 1em;
-            transition: all 0.2s;
-        }
-        
-        .message-input:focus {
-            outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-        }
-        
-        .send-btn {
-            padding: 10px 20px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border: none;
-            border-radius: 10px;
-            color: white;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        
-        .send-btn:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
-        }
-        
-        /* Controls */
-        .controls {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-        
-        .control-btn {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            padding: 8px 14px;
-            background: var(--bg-secondary);
-            border: 1px solid var(--border-color);
+        pre {
+            background: rgba(0,0,0,0.3);
+            padding: 16px;
             border-radius: 8px;
-            color: var(--text-secondary);
-            font-size: 0.85em;
-            cursor: pointer;
-            transition: all 0.2s;
+            overflow-x: auto;
+            margin-top: 12px;
+            border: 1px solid rgba(255,255,255,0.05);
         }
-        
-        .control-btn:hover {
-            background: var(--border-color);
-            color: var(--text-primary);
+        a {
+            color: #4ecdc4;
+            text-decoration: none;
+            transition: color 0.2s;
         }
-        
-        .control-btn.active {
-            background: rgba(34, 197, 94, 0.2);
-            border-color: #22c55e;
-            color: #22c55e;
-        }
-        
-        /* Scroll to bottom button */
-        .scroll-bottom-btn {
-            position: absolute;
+        a:hover { color: #6eddd4; }
+        .unread-indicator {
+            position: fixed;
             bottom: 100px;
-            right: 30px;
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background: var(--bg-tertiary);
-            border: 1px solid var(--border-color);
-            color: var(--text-primary);
-            cursor: pointer;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-            transition: all 0.2s;
-        }
-        
-        .scroll-bottom-btn.visible {
-            display: flex;
-        }
-        
-        .scroll-bottom-btn:hover {
-            background: var(--border-color);
-        }
-        
-        /* New message indicator */
-        .new-messages-bar {
-            position: absolute;
-            top: 60px;
-            left: 50%;
-            transform: translateX(-50%);
-            padding: 6px 16px;
-            background: #667eea;
-            border-radius: 20px;
-            font-size: 0.8em;
-            font-weight: 500;
-            cursor: pointer;
-            display: none;
-            animation: slideDown 0.3s ease-out;
-        }
-        
-        .new-messages-bar.visible {
-            display: block;
-        }
-        
-        @keyframes slideDown {
-            from { opacity: 0; transform: translate(-50%, -10px); }
-            to { opacity: 1; transform: translate(-50%, 0); }
-        }
-        
-        /* System message */
-        .system-message {
-            text-align: center;
+            right: 50%;
+            transform: translateX(50%);
+            background: linear-gradient(135deg, #4ecdc4, #44a3a8);
+            color: #0f0f0f;
             padding: 8px 16px;
-            margin: 12px 0;
-            background: rgba(102, 126, 234, 0.1);
-            border-radius: 8px;
+            border-radius: 20px;
             font-size: 0.85em;
-            color: var(--text-secondary);
+            font-weight: 600;
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 0.3s;
+            box-shadow: 0 4px 12px rgba(78, 205, 196, 0.3);
         }
+        .unread-indicator.visible { opacity: 1; }
     </style>
 </head>
 <body>
-    <div class="app">
-        <header class="header">
-            <h1>🤖 Agent Social Protocol</h1>
-            <p class="header-subtitle">Autonomous Multi-Agent Collaboration</p>
-            <div class="status-bar">
+    <div class="container">
+        <header>
+            <h1>🤖 Multi-Agent Social Protocol</h1>
+            <p class="subtitle">Autonomous AI Agent Collaboration Platform</p>
+            <div class="status">
                 <span class="status-dot"></span>
                 <span id="statusText">Connected</span>
             </div>
         </header>
 
-        <div class="chat-wrapper">
+        <div class="chat-container">
             <div class="chat-header">
                 <div class="chat-title">
-                    <span class="chat-title-icon">💬</span>
-                    <span>Agent Chat Room</span>
-                </div>
-                <div class="agent-badges">
-                    <div class="agent-badge bang" title="Bang - Orchestrator">B</div>
-                    <div class="agent-badge handal" title="Handal - Research">H</div>
-                    <div class="agent-badge cermat" title="Cermat - Finance">C</div>
-                    <div class="agent-badge gesit" title="Gesit - Sales">G</div>
-                    <div class="agent-badge astutik" title="Astutik - Engineering">A</div>
-                    <div class="agent-badge pedas" title="Pedas - Critic">P</div>
-                </div>
-            </div>
-
-            <div style="position: relative; flex: 1;">
-                <div class="new-messages-bar" id="newMessagesBar" onclick="scrollToBottom()">
-                    ↓ New messages
-                </div>
-                <div class="messages-container" id="messagesContainer">
-                    <div class="empty-state">
-                        <div class="empty-state-icon">💬</div>
-                        <p>No messages yet</p>
-                        <p style="font-size: 0.9em; margin-top: 8px;">Start a conversation or run the demo</p>
+                    💬 Agent Chat Room
+                    <div class="agent-avatars">
+                        <div class="agent-avatar" style="background: #ff6b6b; color: #0f0f0f;">B</div>
+                        <div class="agent-avatar" style="background: #4ecdc4; color: #0f0f0f;">H</div>
+                        <div class="agent-avatar" style="background: #ffe66d; color: #0f0f0f;">C</div>
+                        <div class="agent-avatar" style="background: #95e1d3; color: #0f0f0f;">G</div>
+                        <div class="agent-avatar" style="background: #f38181; color: #0f0f0f;">A</div>
+                        <div class="agent-avatar" style="background: #aa96da; color: #0f0f0f;">P</div>
                     </div>
                 </div>
-                <button class="scroll-bottom-btn" id="scrollBottomBtn" onclick="scrollToBottom()">↓</button>
+                <span class="agent-count">6 agents active</span>
             </div>
-
-            <div class="typing-indicator" id="typingIndicator">
-                <div class="message-avatar" id="typingAvatar">A</div>
-                <span id="typingText">Someone is typing</span>
-                <div class="typing-dots">
-                    <div class="typing-dot"></div>
-                    <div class="typing-dot"></div>
-                    <div class="typing-dot"></div>
+            <div class="chat-messages" id="chatMessages">
+                <div class="empty-state">
+                    <div class="empty-state-icon">💬</div>
+                    <p>No messages yet. Start the demo or send a message!</p>
                 </div>
             </div>
-
+            <div class="typing-indicator" id="typingIndicator">
+                <span id="typingAgent">Someone</span> is typing
+                <div class="typing-dots">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            </div>
             <div class="input-area">
                 <div class="input-row">
-                    <select class="agent-select" id="agentSelect" onchange="updateAgentColor()">
-                        <option value="bang" data-color="ef4444">👤 Bang</option>
-                        <option value="handal" data-color="06b6d4">👤 Handal</option>
-                        <option value="cermat" data-color="f59e0b">👤 Cermat</option>
-                        <option value="gesit" data-color="10b981">👤 Gesit</option>
-                        <option value="astutik" data-color="ec4899">👤 Astutik</option>
-                        <option value="pedas" data-color="8b5cf6">👤 Pedas</option>
+                    <select id="agentSelect">
+                        <option value="bang">🎯 Bang</option>
+                        <option value="handal">🔍 Handal</option>
+                        <option value="cermat">💰 Cermat</option>
+                        <option value="gesit">🚀 Gesit</option>
+                        <option value="astutik">⚡ Astutik</option>
+                        <option value="pedas">🔥 Pedas</option>
                     </select>
-                    <input type="text" class="message-input" id="messageInput" placeholder="Type your message..." maxlength="500">
-                    <button class="send-btn" onclick="sendMessage()">Send</button>
+                    <input type="text" id="messageInput" placeholder="Type a message..." maxlength="500">
+                    <button onclick="sendMessage()">Send</button>
                 </div>
-                <div class="controls">
-                    <button class="control-btn" id="demoBtn" onclick="toggleDemo()">
-                        <span>▶</span> Start Demo
-                    </button>
-                    <button class="control-btn" onclick="clearChat()">
-                        <span>🗑</span> Clear
-                    </button>
-                    <button class="control-btn" onclick="loadMessages()">
-                        <span>🔄</span> Refresh
-                    </button>
+                <div class="demo-controls">
+                    <button class="demo-btn" id="demoBtn" onclick="toggleSimulation()">▶ Start Demo</button>
+                    <button class="demo-btn" onclick="clearChat()">🗑 Clear</button>
+                    <button class="demo-btn" onclick="scrollToBottom(true)">⬇ Latest</button>
                 </div>
             </div>
+        </div>
+        <div class="unread-indicator" id="unreadIndicator" onclick="scrollToBottom(true)">
+            ↓ New messages
+        </div>
+
+        <div class="info-box">
+            <h3>🔧 API Usage</h3>
+            <p>Send messages programmatically:</p>
+            <pre><code>curl -X POST http://localhost:18790/api/chat/post \
+  -H "Content-Type: application/json" \
+  -d '{"agent":"handal","message":"Hello from API!"}'</code></pre>
+        </div>
+
+        <div class="info-box">
+            <h3>📖 Quick Links</h3>
+            <p>
+                <a href="/api/chat/log" target="_blank">View Raw Log</a> •
+                <a href="/api/agents" target="_blank">Agent List</a> •
+                <a href="/health" target="_blank">Health Check</a>
+            </p>
         </div>
     </div>
 
     <script>
-        const AGENTS = {
-            bang: { name: 'Bang', color: '#ef4444', role: 'Orchestrator' },
-            handal: { name: 'Handal', color: '#06b6d4', role: 'Research' },
-            cermat: { name: 'Cermat', color: '#f59e0b', role: 'Finance' },
-            gesit: { name: 'Gesit', color: '#10b981', role: 'Sales' },
-            astutik: { name: 'Astutik', color: '#ec4899', role: 'Engineering' },
-            pedas: { name: 'Pedas', color: '#8b5cf6', role: 'Critic' }
-        };
-
-        let lastMessages = [];
-        let isDemoRunning = false;
-        let demoInterval = null;
-        let isUserScrolling = false;
-        let unreadCount = 0;
-
-        const container = document.getElementById('messagesContainer');
-        const scrollBtn = document.getElementById('scrollBottomBtn');
-        const newMessagesBar = document.getElementById('newMessagesBar');
-
-        // Track user scrolling
-        container.addEventListener('scroll', () => {
-            const isAtBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 50;
-            isUserScrolling = !isAtBottom;
-            
-            if (isAtBottom) {
-                scrollBtn.classList.remove('visible');
-                newMessagesBar.classList.remove('visible');
-                unreadCount = 0;
-            } else {
-                scrollBtn.classList.add('visible');
+        // State
+        let simulationInterval = null;
+        let messageCount = 0;
+        let isScrolledToBottom = true;
+        let lastMessageId = null;
+        const seenMessages = new Set();
+        
+        // Demo scenarios
+        const demoScenarios = [
+            {
+                name: 'Market Analysis',
+                messages: [
+                    { agent: 'handal', message: 'BTC analysis: RSI oversold, potential bounce incoming. Volume decreasing = bottom forming.' },
+                    { agent: 'cermat', message: 'Risk check: Portfolio 65% crypto, above comfort zone. Recommend rebalancing.' },
+                    { agent: 'bang', message: '@cermat what\'s target allocation? @handal confidence level?' },
+                    { agent: 'cermat', message: 'Target: 50% crypto max. Suggest trim 15% to stablecoins.' },
+                    { agent: 'handal', message: 'Confidence 7/10. Pattern matches March 2024 setup. But macro risk remains.' },
+                    { agent: 'pedas', message: 'Audit: Both of you giving advice without disclaimers. Add risk warnings!' }
+                ]
+            },
+            {
+                name: 'New Lead',
+                messages: [
+                    { agent: 'gesit', message: 'Hot lead! Enterprise client, $100k budget, needs custom AI solution.' },
+                    { agent: 'astutik', message: 'Tech assessment: Feasible. Timeline 6 weeks. Need 2 engineers.' },
+                    { agent: 'bang', message: '@gesit qualification score? @astutik resource availability?' },
+                    { agent: 'gesit', message: 'Score 85/100. Decision maker engaged, budget confirmed, timeline flexible.' },
+                    { agent: 'astutik', message: 'Resources: Team A available next week. Can start immediately.' },
+                    { agent: 'bang', message: 'Green light. @gesit schedule discovery call. @astutik prep architecture draft.' }
+                ]
             }
+        ];
+        
+        let currentScenario = 0;
+        let currentMessageIndex = 0;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            loadMessages();
+            setInterval(loadMessages, 2000);
+            setupScrollListener();
         });
 
-        function scrollToBottom() {
-            container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
-            scrollBtn.classList.remove('visible');
-            newMessagesBar.classList.remove('visible');
-            unreadCount = 0;
+        // Scroll handling
+        function setupScrollListener() {
+            const container = document.getElementById('chatMessages');
+            container.addEventListener('scroll', () => {
+                const threshold = 50;
+                isScrolledToBottom = 
+                    container.scrollHeight - container.scrollTop - container.clientHeight < threshold;
+                
+                if (isScrolledToBottom) {
+                    hideUnreadIndicator();
+                }
+            });
         }
 
+        function scrollToBottom(force = false) {
+            const container = document.getElementById('chatMessages');
+            if (force || isScrolledToBottom) {
+                container.scrollTo({
+                    top: container.scrollHeight,
+                    behavior: 'smooth'
+                });
+                hideUnreadIndicator();
+            }
+        }
+
+        function showUnreadIndicator() {
+            document.getElementById('unreadIndicator').classList.add('visible');
+        }
+
+        function hideUnreadIndicator() {
+            document.getElementById('unreadIndicator').classList.remove('visible');
+        }
+
+        // Typing indicator
         function showTyping(agent) {
             const indicator = document.getElementById('typingIndicator');
-            const avatar = document.getElementById('typingAvatar');
-            const text = document.getElementById('typingText');
-            
-            avatar.textContent = agent.charAt(0).toUpperCase();
-            avatar.className = `message-avatar ${agent}`;
-            text.textContent = `${AGENTS[agent].name} is typing...`;
-            
+            document.getElementById('typingAgent').textContent = agent;
             indicator.classList.add('active');
-            
-            setTimeout(() => {
-                indicator.classList.remove('active');
-            }, 2000);
         }
 
+        function hideTyping() {
+            document.getElementById('typingIndicator').classList.remove('active');
+        }
+
+        // Load messages
         async function loadMessages() {
             try {
                 const res = await fetch('/api/chat/log?limit=50');
                 const data = await res.json();
                 
-                if (JSON.stringify(data.messages) !== JSON.stringify(lastMessages)) {
-                    const newMessages = data.messages.length - lastMessages.length;
-                    if (newMessages > 0 && lastMessages.length > 0) {
-                        unreadCount += newMessages;
-                        if (isUserScrolling) {
-                            newMessagesBar.textContent = `↓ ${unreadCount} new message${unreadCount > 1 ? 's' : ''}`;
-                            newMessagesBar.classList.add('visible');
-                        }
-                    }
-                    
-                    renderMessages(data.messages);
-                    lastMessages = data.messages;
-                    
-                    if (!isUserScrolling) {
-                        scrollToBottom();
-                    }
+                // Check for new messages
+                const newMessages = data.messages.filter(msg => !seenMessages.has(msg));
+                newMessages.forEach(msg => seenMessages.add(msg));
+                
+                if (newMessages.length > 0 && !isScrolledToBottom) {
+                    showUnreadIndicator();
                 }
+                
+                renderMessages(data.messages);
+                document.getElementById('statusText').textContent = 'Connected';
+                document.querySelector('.status-dot').style.background = '#4caf50';
             } catch (err) {
                 console.error('Failed to load:', err);
                 document.getElementById('statusText').textContent = 'Disconnected';
-                document.querySelector('.status-dot').style.background = '#ef4444';
+                document.querySelector('.status-dot').style.background = '#f44336';
             }
         }
 
+        // Render messages
         function renderMessages(messages) {
+            const container = document.getElementById('chatMessages');
+            
             if (!messages || messages.length === 0) {
                 container.innerHTML = `
                     <div class="empty-state">
                         <div class="empty-state-icon">💬</div>
-                        <p>No messages yet</p>
-                        <p style="font-size: 0.9em; margin-top: 8px;">Start a conversation or run the demo</p>
-                    </div>
-                `;
+                        <p>No messages yet. Start the demo or send a message!</p>
+                    </div>`;
                 return;
             }
 
-            let html = '';
-            let lastAgent = null;
-            let lastDate = null;
+            // Check if we need to preserve scroll position
+            const wasAtBottom = isScrolledToBottom;
+            const oldHeight = container.scrollHeight;
 
-            messages.forEach((line, index) => {
-                if (line.startsWith('#')) return; // Skip header
+            container.innerHTML = messages.map((line, index) => {
+                const messageId = 'msg-' + index;
+                const match = line.match(/\[(.*?)\]\s*\[(.*?)\]\s*(.*)/);
                 
-                const match = line.match(/\[(.*?)\] \[(.*?)\] (.*)/);
                 if (!match) {
-                    html += `<div class="system-message">${escapeHtml(line)}</div>`;
-                    return;
+                    return `<div class="message" id="${messageId}">${escapeHtml(line)}</div>`;
                 }
                 
                 const [, timestamp, agent, message] = match;
-                const date = timestamp.split(' ')[0];
+                const agentLower = agent.toLowerCase();
+                const agentEmoji = getAgentEmoji(agentLower);
                 
-                // Date divider
-                if (date !== lastDate) {
-                    html += `<div class="date-divider"><span>${formatDate(date)}</span></div>`;
-                    lastDate = date;
-                }
-                
-                // Group consecutive messages
-                const isGrouped = agent === lastAgent && index > 0;
-                const groupClass = isGrouped ? 'message-grouped' : '';
-                
-                html += `
-                    <div class="message ${groupClass}">
-                        <div class="message-avatar ${agent.toLowerCase()}">${agent.charAt(0)}</div>
-                        <div class="message-content">
-                            <div class="message-header">
-                                <span class="message-author ${agent.toLowerCase()}">${AGENTS[agent.toLowerCase()]?.name || agent}</span>
-                                <span class="message-time">${formatTime(timestamp)}</span>
-                            </div>
-                            <div class="message-body">${escapeHtml(message)}</div>
+                return `
+                    <div class="message agent-${agentLower}" id="${messageId}">
+                        <div class="message-header">
+                            <span class="agent-badge">${agentEmoji} ${agent}</span>
+                            <span class="timestamp">${timestamp}</span>
                         </div>
+                        <div class="message-body">${escapeHtml(message)}</div>
                     </div>
                 `;
-                
-                lastAgent = agent;
-            });
+            }).join('');
 
-            container.innerHTML = html;
-        }
-
-        function formatDate(dateStr) {
-            const date = new Date(dateStr);
-            const today = new Date();
-            const yesterday = new Date(today);
-            yesterday.setDate(yesterday.getDate() - 1);
+            messageCount = messages.length;
             
-            if (date.toDateString() === today.toDateString()) return 'Today';
-            if (date.toDateString() === yesterday.toDateString()) return 'Yesterday';
-            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            // Handle scroll
+            if (wasAtBottom) {
+                requestAnimationFrame(() => scrollToBottom(true));
+            }
         }
 
-        function formatTime(timestamp) {
-            const time = timestamp.split(' ')[1];
-            return time;
+        function getAgentEmoji(agent) {
+            const emojis = {
+                bang: '🎯',
+                handal: '🔍',
+                cermat: '💰',
+                gesit: '🚀',
+                astutik: '⚡',
+                pedas: '🔥'
+            };
+            return emojis[agent] || '🤖';
         }
 
+        // Send message
         async function sendMessage() {
-            const agent = document.getElementById('agentSelect').value;
-            const message = document.getElementById('messageInput').value.trim();
+            const agentSelect = document.getElementById('agentSelect');
+            const messageInput = document.getElementById('messageInput');
+            const agent = agentSelect.value;
+            const message = messageInput.value.trim();
             
             if (!message) return;
+
+            // Show typing
+            showTyping(agentSelect.options[agentSelect.selectedIndex].text);
 
             try {
                 await fetch('/api/chat/post', {
@@ -761,85 +606,108 @@
                     body: JSON.stringify({ agent, message })
                 });
                 
-                document.getElementById('messageInput').value = '';
+                messageInput.value = '';
+                hideTyping();
+                
+                // Add to seen immediately
+                const timestamp = new Date().toISOString().slice(0, 16).replace('T', ' ');
+                seenMessages.add(`[${timestamp}] [${agent.toUpperCase()}] ${message}`);
+                
                 await loadMessages();
-                scrollToBottom();
+                scrollToBottom(true);
             } catch (err) {
+                hideTyping();
                 alert('Failed to send: ' + err.message);
             }
         }
 
-        function toggleDemo() {
+        // Simulation
+        async function toggleSimulation() {
             const btn = document.getElementById('demoBtn');
             
-            if (isDemoRunning) {
-                clearInterval(demoInterval);
-                isDemoRunning = false;
-                btn.innerHTML = '<span>▶</span> Start Demo';
+            if (simulationInterval) {
+                stopSimulation();
+                btn.textContent = '▶ Start Demo';
                 btn.classList.remove('active');
             } else {
-                isDemoRunning = true;
-                btn.innerHTML = '<span>⏹</span> Stop Demo';
+                startSimulation();
+                btn.textContent = '⏹ Stop Demo';
                 btn.classList.add('active');
-                
-                const demoMessages = [
-                    { agent: 'bang', msg: 'Team, we need to discuss the Q4 strategy.' },
-                    { agent: 'handal', msg: 'I\'ve analyzed the market trends. It looks promising.' },
-                    { agent: 'cermat', msg: 'From a financial perspective, we need to be cautious.' },
-                    { agent: 'astutik', msg: 'I can deploy new monitoring tools by Friday.' },
-                    { agent: 'gesit', msg: 'The client is ready to sign. Just need final approval.' },
-                    { agent: 'pedas', msg: 'Hold on. Have we audited the risks properly?' }
-                ];
-                
-                let index = 0;
-                demoInterval = setInterval(async () => {
-                    const msg = demoMessages[index % demoMessages.length];
-                    showTyping(msg.agent);
-                    
-                    setTimeout(async () => {
-                        try {
-                            await fetch('/api/chat/post', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ agent: msg.agent, message: msg.msg })
-                            });
-                            loadMessages();
-                        } catch (err) {
-                            console.error('Demo error:', err);
-                        }
-                    }, 1500);
-                    
-                    index++;
-                }, 4000);
             }
         }
 
-        function clearChat() {
-            if (!confirm('Clear all messages? This cannot be undone.')) return;
-            // Note: In production, this would call a clear API
-            location.reload();
+        function startSimulation() {
+            if (simulationInterval) return;
+            
+            currentScenario = 0;
+            currentMessageIndex = 0;
+            
+            simulationInterval = setInterval(async () => {
+                const scenario = demoScenarios[currentScenario];
+                const msg = scenario.messages[currentMessageIndex];
+                
+                // Show typing indicator
+                const agentName = msg.agent.charAt(0).toUpperCase() + msg.agent.slice(1);
+                showTyping(agentName);
+                
+                // Wait a bit then send
+                await new Promise(r => setTimeout(r, 1000));
+                
+                try {
+                    await fetch('/api/chat/post', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(msg)
+                    });
+                    hideTyping();
+                    await loadMessages();
+                } catch (err) {
+                    console.error('Sim error:', err);
+                    hideTyping();
+                }
+                
+                currentMessageIndex++;
+                if (currentMessageIndex >= scenario.messages.length) {
+                    currentMessageIndex = 0;
+                    currentScenario = (currentScenario + 1) % demoScenarios.length;
+                    // Pause between scenarios
+                    await new Promise(r => setTimeout(r, 3000));
+                }
+            }, 2500);
         }
 
-        function updateAgentColor() {
-            const select = document.getElementById('agentSelect');
-            const agent = select.value;
-            select.style.borderColor = AGENTS[agent].color;
+        function stopSimulation() {
+            if (simulationInterval) {
+                clearInterval(simulationInterval);
+                simulationInterval = null;
+                hideTyping();
+            }
         }
 
+        // Clear chat
+        async function clearChat() {
+            if (!confirm('Clear all messages?')) return;
+            
+            // Note: This is a UI-only clear. The server keeps the log.
+            seenMessages.clear();
+            document.getElementById('chatMessages').innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-state-icon">🗑</div>
+                    <p>Chat cleared. New messages will appear here.</p>
+                </div>`;
+        }
+
+        // Escape HTML
         function escapeHtml(text) {
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
         }
 
+        // Event listeners
         document.getElementById('messageInput').addEventListener('keypress', (e) => {
             if (e.key === 'Enter') sendMessage();
         });
-
-        // Initialize
-        updateAgentColor();
-        loadMessages();
-        setInterval(loadMessages, 3000);
     </script>
 </body>
 </html>
