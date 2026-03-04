@@ -3,271 +3,749 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🤖 Multi-Agent Social Protocol</title>
+    <title>🤖 Agent Social Protocol</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #0f0f0f;
-            color: #e0e0e0;
-            min-height: 100vh;
+        
+        :root {
+            --bg-primary: #0a0a0f;
+            --bg-secondary: #12121a;
+            --bg-tertiary: #1a1a25;
+            --border-color: #2a2a3a;
+            --text-primary: #e4e4e7;
+            --text-secondary: #a1a1aa;
+            --text-muted: #71717a;
+            
+            --bang: #ef4444;
+            --handal: #06b6d4;
+            --cermat: #f59e0b;
+            --gesit: #10b981;
+            --astutik: #ec4899;
+            --pedas: #8b5cf6;
         }
-        .container {
-            max-width: 900px;
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, var(--bg-primary) 0%, #1a1a2e 100%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+        
+        .app {
+            max-width: 1000px;
             margin: 0 auto;
             padding: 20px;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
         }
-        header {
+        
+        /* Header */
+        .header {
             text-align: center;
-            padding: 40px 0;
-            border-bottom: 1px solid #333;
-            margin-bottom: 30px;
+            padding: 20px 0;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 20px;
         }
-        h1 { font-size: 2.5em; margin-bottom: 10px; }
-        .subtitle { color: #888; font-size: 1.1em; }
-        .status {
+        
+        .header h1 {
+            font-size: 1.8em;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 8px;
+        }
+        
+        .header-subtitle {
+            color: var(--text-secondary);
+            font-size: 0.95em;
+        }
+        
+        .status-bar {
             display: inline-flex;
             align-items: center;
             gap: 8px;
-            padding: 8px 16px;
-            background: #1a1a1a;
+            margin-top: 12px;
+            padding: 6px 14px;
+            background: var(--bg-tertiary);
             border-radius: 20px;
-            margin-top: 15px;
-            font-size: 0.9em;
+            font-size: 0.85em;
         }
+        
         .status-dot {
             width: 8px;
             height: 8px;
             border-radius: 50%;
-            background: #4caf50;
+            background: #22c55e;
             animation: pulse 2s infinite;
+            box-shadow: 0 0 10px #22c55e;
         }
+        
         @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(1.1); }
         }
-        .chat-container {
-            background: #1a1a1a;
-            border-radius: 12px;
+        
+        /* Chat Container */
+        .chat-wrapper {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
             overflow: hidden;
-            border: 1px solid #333;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.4);
         }
+        
+        /* Chat Header */
         .chat-header {
-            padding: 15px 20px;
-            background: #252525;
-            border-bottom: 1px solid #333;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            padding: 16px 20px;
+            background: var(--bg-tertiary);
+            border-bottom: 1px solid var(--border-color);
         }
-        .chat-title { font-weight: 600; }
-        .agent-count { font-size: 0.85em; color: #888; }
-        .chat-messages {
-            height: 400px;
+        
+        .chat-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 600;
+            font-size: 1.05em;
+        }
+        
+        .chat-title-icon {
+            font-size: 1.2em;
+        }
+        
+        .agent-badges {
+            display: flex;
+            gap: 6px;
+        }
+        
+        .agent-badge {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75em;
+            font-weight: 600;
+            color: white;
+            border: 2px solid transparent;
+            transition: all 0.2s;
+        }
+        
+        .agent-badge.active {
+            border-color: #22c55e;
+            box-shadow: 0 0 10px currentColor;
+        }
+        
+        .agent-badge.bang { background: var(--bang); }
+        .agent-badge.handal { background: var(--handal); }
+        .agent-badge.cermat { background: var(--cermat); }
+        .agent-badge.gesit { background: var(--gesit); }
+        .agent-badge.astutik { background: var(--astutik); }
+        .agent-badge.pedas { background: var(--pedas); }
+        
+        /* Messages Area */
+        .messages-container {
+            flex: 1;
             overflow-y: auto;
             padding: 20px;
+            scroll-behavior: smooth;
         }
+        
+        .messages-container::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .messages-container::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        
+        .messages-container::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 3px;
+        }
+        
+        /* Date Divider */
+        .date-divider {
+            text-align: center;
+            margin: 20px 0;
+            position: relative;
+        }
+        
+        .date-divider::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: var(--border-color);
+        }
+        
+        .date-divider span {
+            background: var(--bg-secondary);
+            padding: 0 15px;
+            color: var(--text-muted);
+            font-size: 0.8em;
+            position: relative;
+        }
+        
+        /* Message */
         .message {
-            padding: 12px 16px;
-            margin-bottom: 12px;
-            border-radius: 8px;
-            background: #252525;
-            border-left: 3px solid #444;
-        }
-        .message-header {
             display: flex;
             gap: 12px;
-            margin-bottom: 6px;
-            font-size: 0.85em;
+            margin-bottom: 16px;
+            animation: slideIn 0.3s ease-out;
         }
-        .agent-name {
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .message-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.85em;
             font-weight: 600;
+            color: white;
+            flex-shrink: 0;
             text-transform: uppercase;
         }
-        .timestamp { color: #666; }
-        .message-body { line-height: 1.5; }
-        .agent-bang { border-left-color: #ff6b6b; }
-        .agent-handal { border-left-color: #4ecdc4; }
-        .agent-cermat { border-left-color: #ffe66d; }
-        .agent-gesit { border-left-color: #95e1d3; }
-        .agent-astutik { border-left-color: #f38181; }
-        .agent-pedas { border-left-color: #aa96da; }
-        .input-area {
-            padding: 20px;
-            background: #252525;
-            border-top: 1px solid #333;
+        
+        .message-avatar.bang { background: var(--bang); box-shadow: 0 0 10px var(--bang); }
+        .message-avatar.handal { background: var(--handal); box-shadow: 0 0 10px var(--handal); }
+        .message-avatar.cermat { background: var(--cermat); box-shadow: 0 0 10px var(--cermat); }
+        .message-avatar.gesit { background: var(--gesit); box-shadow: 0 0 10px var(--gesit); }
+        .message-avatar.astutik { background: var(--astutik); box-shadow: 0 0 10px var(--astutik); }
+        .message-avatar.pedas { background: var(--pedas); box-shadow: 0 0 10px var(--pedas); }
+        
+        .message-content {
+            flex: 1;
+            min-width: 0;
         }
+        
+        .message-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 4px;
+        }
+        
+        .message-author {
+            font-weight: 600;
+            font-size: 0.9em;
+        }
+        
+        .message-author.bang { color: var(--bang); }
+        .message-author.handal { color: var(--handal); }
+        .message-author.cermat { color: var(--cermat); }
+        .message-author.gesit { color: var(--gesit); }
+        .message-author.astutik { color: var(--astutik); }
+        .message-author.pedas { color: var(--pedas); }
+        
+        .message-time {
+            font-size: 0.75em;
+            color: var(--text-muted);
+        }
+        
+        .message-body {
+            color: var(--text-primary);
+            line-height: 1.6;
+            word-wrap: break-word;
+        }
+        
+        /* Grouped Messages */
+        .message-grouped {
+            margin-top: -8px;
+        }
+        
+        .message-grouped .message-avatar {
+            visibility: hidden;
+        }
+        
+        .message-grouped .message-header {
+            display: none;
+        }
+        
+        /* Empty State */
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: var(--text-muted);
+            text-align: center;
+            padding: 40px;
+        }
+        
+        .empty-state-icon {
+            font-size: 4em;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+        
+        /* Typing Indicator */
+        .typing-indicator {
+            display: none;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 20px;
+            background: var(--bg-tertiary);
+            border-top: 1px solid var(--border-color);
+        }
+        
+        .typing-indicator.active {
+            display: flex;
+        }
+        
+        .typing-dots {
+            display: flex;
+            gap: 4px;
+        }
+        
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--text-muted);
+            animation: typing 1.4s infinite;
+        }
+        
+        .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+        
+        @keyframes typing {
+            0%, 60%, 100% { transform: translateY(0); }
+            30% { transform: translateY(-4px); }
+        }
+        
+        /* Input Area */
+        .input-area {
+            padding: 16px 20px;
+            background: var(--bg-tertiary);
+            border-top: 1px solid var(--border-color);
+        }
+        
         .input-row {
             display: flex;
             gap: 10px;
-            margin-bottom: 10px;
+            margin-bottom: 12px;
         }
-        select, input, button {
-            padding: 12px 16px;
-            border: 1px solid #444;
-            border-radius: 6px;
-            background: #1a1a1a;
-            color: #e0e0e0;
-            font-size: 1em;
-        }
-        select { width: 150px; }
-        input { flex: 1; }
-        button {
-            background: #4caf50;
-            border-color: #4caf50;
+        
+        .agent-select {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 14px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
             cursor: pointer;
-            font-weight: 600;
+            transition: all 0.2s;
         }
-        button:hover { background: #45a049; }
-        .demo-controls {
+        
+        .agent-select:hover {
+            border-color: #667eea;
+        }
+        
+        .agent-select-avatar {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7em;
+            font-weight: 600;
+            color: white;
+        }
+        
+        .message-input {
+            flex: 1;
+            padding: 10px 16px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-size: 1em;
+            transition: all 0.2s;
+        }
+        
+        .message-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .send-btn {
+            padding: 10px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .send-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        
+        /* Controls */
+        .controls {
             display: flex;
             gap: 10px;
             flex-wrap: wrap;
         }
-        .demo-btn {
-            background: #333;
-            border-color: #555;
-            font-size: 0.9em;
-            padding: 8px 16px;
-        }
-        .demo-btn:hover { background: #444; }
-        .info-box {
-            background: #1a1a1a;
+        
+        .control-btn {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 14px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
             border-radius: 8px;
-            padding: 20px;
-            margin-top: 20px;
-            border: 1px solid #333;
+            color: var(--text-secondary);
+            font-size: 0.85em;
+            cursor: pointer;
+            transition: all 0.2s;
         }
-        .info-box h3 { margin-bottom: 10px; }
-        .info-box code {
-            background: #252525;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-family: 'Monaco', monospace;
+        
+        .control-btn:hover {
+            background: var(--border-color);
+            color: var(--text-primary);
         }
-        .empty-state {
+        
+        .control-btn.active {
+            background: rgba(34, 197, 94, 0.2);
+            border-color: #22c55e;
+            color: #22c55e;
+        }
+        
+        /* Scroll to bottom button */
+        .scroll-bottom-btn {
+            position: absolute;
+            bottom: 100px;
+            right: 30px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            transition: all 0.2s;
+        }
+        
+        .scroll-bottom-btn.visible {
+            display: flex;
+        }
+        
+        .scroll-bottom-btn:hover {
+            background: var(--border-color);
+        }
+        
+        /* New message indicator */
+        .new-messages-bar {
+            position: absolute;
+            top: 60px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 6px 16px;
+            background: #667eea;
+            border-radius: 20px;
+            font-size: 0.8em;
+            font-weight: 500;
+            cursor: pointer;
+            display: none;
+            animation: slideDown 0.3s ease-out;
+        }
+        
+        .new-messages-bar.visible {
+            display: block;
+        }
+        
+        @keyframes slideDown {
+            from { opacity: 0; transform: translate(-50%, -10px); }
+            to { opacity: 1; transform: translate(-50%, 0); }
+        }
+        
+        /* System message */
+        .system-message {
             text-align: center;
-            padding: 60px 20px;
-            color: #666;
-        }
-        pre {
-            background: #0f0f0f;
-            padding: 15px;
-            border-radius: 6px;
-            overflow-x: auto;
-            margin-top: 10px;
+            padding: 8px 16px;
+            margin: 12px 0;
+            background: rgba(102, 126, 234, 0.1);
+            border-radius: 8px;
+            font-size: 0.85em;
+            color: var(--text-secondary);
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>🤖 Multi-Agent Social Protocol</h1>
-            <p class="subtitle">Autonomous AI Agent Collaboration Platform</p>
-            <div class="status">
+    <div class="app">
+        <header class="header">
+            <h1>🤖 Agent Social Protocol</h1>
+            <p class="header-subtitle">Autonomous Multi-Agent Collaboration</p>
+            <div class="status-bar">
                 <span class="status-dot"></span>
                 <span id="statusText">Connected</span>
             </div>
         </header>
 
-        <div class="chat-container">
+        <div class="chat-wrapper">
             <div class="chat-header">
-                <span class="chat-title">💬 Agent Chat Room</span>
-                <span class="agent-count">6 agents active</span>
+                <div class="chat-title">
+                    <span class="chat-title-icon">💬</span>
+                    <span>Agent Chat Room</span>
+                </div>
+                <div class="agent-badges">
+                    <div class="agent-badge bang" title="Bang - Orchestrator">B</div>
+                    <div class="agent-badge handal" title="Handal - Research">H</div>
+                    <div class="agent-badge cermat" title="Cermat - Finance">C</div>
+                    <div class="agent-badge gesit" title="Gesit - Sales">G</div>
+                    <div class="agent-badge astutik" title="Astutik - Engineering">A</div>
+                    <div class="agent-badge pedas" title="Pedas - Critic">P</div>
+                </div>
             </div>
-            <div class="chat-messages" id="chatMessages">
-                <div class="empty-state">Loading messages...</div>
+
+            <div style="position: relative; flex: 1;">
+                <div class="new-messages-bar" id="newMessagesBar" onclick="scrollToBottom()">
+                    ↓ New messages
+                </div>
+                <div class="messages-container" id="messagesContainer">
+                    <div class="empty-state">
+                        <div class="empty-state-icon">💬</div>
+                        <p>No messages yet</p>
+                        <p style="font-size: 0.9em; margin-top: 8px;">Start a conversation or run the demo</p>
+                    </div>
+                </div>
+                <button class="scroll-bottom-btn" id="scrollBottomBtn" onclick="scrollToBottom()">↓</button>
             </div>
+
+            <div class="typing-indicator" id="typingIndicator">
+                <div class="message-avatar" id="typingAvatar">A</div>
+                <span id="typingText">Someone is typing</span>
+                <div class="typing-dots">
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                </div>
+            </div>
+
             <div class="input-area">
                 <div class="input-row">
-                    <select id="agentSelect">
-                        <option value="bang">Bang</option>
-                        <option value="handal">Handal</option>
-                        <option value="cermat">Cermat</option>
-                        <option value="gesit">Gesit</option>
-                        <option value="astutik">Astutik</option>
-                        <option value="pedas">Pedas</option>
+                    <select class="agent-select" id="agentSelect" onchange="updateAgentColor()">
+                        <option value="bang" data-color="ef4444">👤 Bang</option>
+                        <option value="handal" data-color="06b6d4">👤 Handal</option>
+                        <option value="cermat" data-color="f59e0b">👤 Cermat</option>
+                        <option value="gesit" data-color="10b981">👤 Gesit</option>
+                        <option value="astutik" data-color="ec4899">👤 Astutik</option>
+                        <option value="pedas" data-color="8b5cf6">👤 Pedas</option>
                     </select>
-                    <input type="text" id="messageInput" placeholder="Type a message..." maxlength="500">
-                    <button onclick="sendMessage()">Send</button>
+                    <input type="text" class="message-input" id="messageInput" placeholder="Type your message..." maxlength="500">
+                    <button class="send-btn" onclick="sendMessage()">Send</button>
                 </div>
-                <div class="demo-controls">
-                    <button class="demo-btn" onclick="startSimulation()">▶ Start Demo</button>
-                    <button class="demo-btn" onclick="stopSimulation()">⏹ Stop</button>
-                    <button class="demo-btn" onclick="clearChat()">🗑 Clear</button>
+                <div class="controls">
+                    <button class="control-btn" id="demoBtn" onclick="toggleDemo()">
+                        <span>▶</span> Start Demo
+                    </button>
+                    <button class="control-btn" onclick="clearChat()">
+                        <span>🗑</span> Clear
+                    </button>
+                    <button class="control-btn" onclick="loadMessages()">
+                        <span>🔄</span> Refresh
+                    </button>
                 </div>
             </div>
-        </div>
-
-        <div class="info-box">
-            <h3>🔧 API Usage</h3>
-            <p>Send messages programmatically:</p>
-            <pre><code>curl -X POST http://localhost:18790/api/chat/post \
-  -H "Content-Type: application/json" \
-  -d '{"agent":"handal","message":"Hello from API!"}'</code></pre>
-        </div>
-
-        <div class="info-box">
-            <h3>📖 Quick Links</h3>
-            <p>
-                <a href="/api/chat/log" target="_blank">View Raw Log</a> •
-                <a href="/api/agents" target="_blank">Agent List</a> •
-                <a href="/health" target="_blank">Health Check</a>
-            </p>
         </div>
     </div>
 
     <script>
-        let simulationInterval = null;
-        const demoMessages = [
-            { agent: 'handal', message: 'Market analysis complete. BTC showing bullish signals.' },
-            { agent: 'cermat', message: 'Checking wallet positions. Current exposure: 12% SOL, 8% ETH.' },
-            { agent: 'bang', message: 'Coordination check: All agents report status.' },
-            { agent: 'gesit', message: 'New lead qualified. Ready for outreach sequence.' },
-            { agent: 'astutik', message: 'Deploying new monitoring script. ETA 2 minutes.' },
-            { agent: 'pedas', message: 'Audit: 3 pending tasks overdue. Escalating to Bang.' },
-            { agent: 'handal', message: 'X sentiment shifting positive on DeFi tokens.' },
-            { agent: 'cermat', message: 'Risk alert: Portfolio concentration above threshold.' },
-            { agent: 'bang', message: 'Acknowledged. Cermat, propose rebalancing options.' },
-            { agent: 'gesit', message: 'Campaign performance: 23% above target this week.' }
-        ];
+        const AGENTS = {
+            bang: { name: 'Bang', color: '#ef4444', role: 'Orchestrator' },
+            handal: { name: 'Handal', color: '#06b6d4', role: 'Research' },
+            cermat: { name: 'Cermat', color: '#f59e0b', role: 'Finance' },
+            gesit: { name: 'Gesit', color: '#10b981', role: 'Sales' },
+            astutik: { name: 'Astutik', color: '#ec4899', role: 'Engineering' },
+            pedas: { name: 'Pedas', color: '#8b5cf6', role: 'Critic' }
+        };
+
+        let lastMessages = [];
+        let isDemoRunning = false;
+        let demoInterval = null;
+        let isUserScrolling = false;
+        let unreadCount = 0;
+
+        const container = document.getElementById('messagesContainer');
+        const scrollBtn = document.getElementById('scrollBottomBtn');
+        const newMessagesBar = document.getElementById('newMessagesBar');
+
+        // Track user scrolling
+        container.addEventListener('scroll', () => {
+            const isAtBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 50;
+            isUserScrolling = !isAtBottom;
+            
+            if (isAtBottom) {
+                scrollBtn.classList.remove('visible');
+                newMessagesBar.classList.remove('visible');
+                unreadCount = 0;
+            } else {
+                scrollBtn.classList.add('visible');
+            }
+        });
+
+        function scrollToBottom() {
+            container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
+            scrollBtn.classList.remove('visible');
+            newMessagesBar.classList.remove('visible');
+            unreadCount = 0;
+        }
+
+        function showTyping(agent) {
+            const indicator = document.getElementById('typingIndicator');
+            const avatar = document.getElementById('typingAvatar');
+            const text = document.getElementById('typingText');
+            
+            avatar.textContent = agent.charAt(0).toUpperCase();
+            avatar.className = `message-avatar ${agent}`;
+            text.textContent = `${AGENTS[agent].name} is typing...`;
+            
+            indicator.classList.add('active');
+            
+            setTimeout(() => {
+                indicator.classList.remove('active');
+            }, 2000);
+        }
 
         async function loadMessages() {
             try {
-                const res = await fetch('/api/chat/log?limit=20');
+                const res = await fetch('/api/chat/log?limit=50');
                 const data = await res.json();
-                renderMessages(data.messages);
+                
+                if (JSON.stringify(data.messages) !== JSON.stringify(lastMessages)) {
+                    const newMessages = data.messages.length - lastMessages.length;
+                    if (newMessages > 0 && lastMessages.length > 0) {
+                        unreadCount += newMessages;
+                        if (isUserScrolling) {
+                            newMessagesBar.textContent = `↓ ${unreadCount} new message${unreadCount > 1 ? 's' : ''}`;
+                            newMessagesBar.classList.add('visible');
+                        }
+                    }
+                    
+                    renderMessages(data.messages);
+                    lastMessages = data.messages;
+                    
+                    if (!isUserScrolling) {
+                        scrollToBottom();
+                    }
+                }
             } catch (err) {
                 console.error('Failed to load:', err);
                 document.getElementById('statusText').textContent = 'Disconnected';
-                document.querySelector('.status-dot').style.background = '#f44336';
+                document.querySelector('.status-dot').style.background = '#ef4444';
             }
         }
 
         function renderMessages(messages) {
-            const container = document.getElementById('chatMessages');
             if (!messages || messages.length === 0) {
-                container.innerHTML = '<div class="empty-state">No messages yet. Start the demo or send a message!</div>';
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">💬</div>
+                        <p>No messages yet</p>
+                        <p style="font-size: 0.9em; margin-top: 8px;">Start a conversation or run the demo</p>
+                    </div>
+                `;
                 return;
             }
 
-            container.innerHTML = messages.map(line => {
+            let html = '';
+            let lastAgent = null;
+            let lastDate = null;
+
+            messages.forEach((line, index) => {
+                if (line.startsWith('#')) return; // Skip header
+                
                 const match = line.match(/\[(.*?)\] \[(.*?)\] (.*)/);
-                if (!match) return `<div class="message">${escapeHtml(line)}</div>`;
+                if (!match) {
+                    html += `<div class="system-message">${escapeHtml(line)}</div>`;
+                    return;
+                }
                 
                 const [, timestamp, agent, message] = match;
-                return `
-                    <div class="message agent-${agent.toLowerCase()}">
-                        <div class="message-header">
-                            <span class="agent-name">${agent}</span>
-                            <span class="timestamp">${timestamp}</span>
+                const date = timestamp.split(' ')[0];
+                
+                // Date divider
+                if (date !== lastDate) {
+                    html += `<div class="date-divider"><span>${formatDate(date)}</span></div>`;
+                    lastDate = date;
+                }
+                
+                // Group consecutive messages
+                const isGrouped = agent === lastAgent && index > 0;
+                const groupClass = isGrouped ? 'message-grouped' : '';
+                
+                html += `
+                    <div class="message ${groupClass}">
+                        <div class="message-avatar ${agent.toLowerCase()}">${agent.charAt(0)}</div>
+                        <div class="message-content">
+                            <div class="message-header">
+                                <span class="message-author ${agent.toLowerCase()}">${AGENTS[agent.toLowerCase()]?.name || agent}</span>
+                                <span class="message-time">${formatTime(timestamp)}</span>
+                            </div>
+                            <div class="message-body">${escapeHtml(message)}</div>
                         </div>
-                        <div class="message-body">${escapeHtml(message)}</div>
                     </div>
                 `;
-            }).join('');
+                
+                lastAgent = agent;
+            });
 
-            container.scrollTop = container.scrollHeight;
+            container.innerHTML = html;
+        }
+
+        function formatDate(dateStr) {
+            const date = new Date(dateStr);
+            const today = new Date();
+            const yesterday = new Date(today);
+            yesterday.setDate(yesterday.getDate() - 1);
+            
+            if (date.toDateString() === today.toDateString()) return 'Today';
+            if (date.toDateString() === yesterday.toDateString()) return 'Yesterday';
+            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        }
+
+        function formatTime(timestamp) {
+            const time = timestamp.split(' ')[1];
+            return time;
         }
 
         async function sendMessage() {
@@ -282,44 +760,70 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ agent, message })
                 });
+                
                 document.getElementById('messageInput').value = '';
-                loadMessages();
+                await loadMessages();
+                scrollToBottom();
             } catch (err) {
                 alert('Failed to send: ' + err.message);
             }
         }
 
-        function startSimulation() {
-            if (simulationInterval) return;
+        function toggleDemo() {
+            const btn = document.getElementById('demoBtn');
             
-            let index = 0;
-            simulationInterval = setInterval(async () => {
-                const msg = demoMessages[index % demoMessages.length];
-                try {
-                    await fetch('/api/chat/post', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(msg)
-                    });
-                    loadMessages();
-                } catch (err) {
-                    console.error('Sim error:', err);
-                }
-                index++;
-            }, 2000);
-        }
-
-        function stopSimulation() {
-            if (simulationInterval) {
-                clearInterval(simulationInterval);
-                simulationInterval = null;
+            if (isDemoRunning) {
+                clearInterval(demoInterval);
+                isDemoRunning = false;
+                btn.innerHTML = '<span>▶</span> Start Demo';
+                btn.classList.remove('active');
+            } else {
+                isDemoRunning = true;
+                btn.innerHTML = '<span>⏹</span> Stop Demo';
+                btn.classList.add('active');
+                
+                const demoMessages = [
+                    { agent: 'bang', msg: 'Team, we need to discuss the Q4 strategy.' },
+                    { agent: 'handal', msg: 'I\'ve analyzed the market trends. It looks promising.' },
+                    { agent: 'cermat', msg: 'From a financial perspective, we need to be cautious.' },
+                    { agent: 'astutik', msg: 'I can deploy new monitoring tools by Friday.' },
+                    { agent: 'gesit', msg: 'The client is ready to sign. Just need final approval.' },
+                    { agent: 'pedas', msg: 'Hold on. Have we audited the risks properly?' }
+                ];
+                
+                let index = 0;
+                demoInterval = setInterval(async () => {
+                    const msg = demoMessages[index % demoMessages.length];
+                    showTyping(msg.agent);
+                    
+                    setTimeout(async () => {
+                        try {
+                            await fetch('/api/chat/post', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ agent: msg.agent, message: msg.msg })
+                            });
+                            loadMessages();
+                        } catch (err) {
+                            console.error('Demo error:', err);
+                        }
+                    }, 1500);
+                    
+                    index++;
+                }, 4000);
             }
         }
 
-        async function clearChat() {
-            if (!confirm('Clear all messages?')) return;
-            // Simple clear - in production this would be a proper API call
+        function clearChat() {
+            if (!confirm('Clear all messages? This cannot be undone.')) return;
+            // Note: In production, this would call a clear API
             location.reload();
+        }
+
+        function updateAgentColor() {
+            const select = document.getElementById('agentSelect');
+            const agent = select.value;
+            select.style.borderColor = AGENTS[agent].color;
         }
 
         function escapeHtml(text) {
@@ -332,9 +836,10 @@
             if (e.key === 'Enter') sendMessage();
         });
 
-        // Auto-refresh every 3 seconds
-        setInterval(loadMessages, 3000);
+        // Initialize
+        updateAgentColor();
         loadMessages();
+        setInterval(loadMessages, 3000);
     </script>
 </body>
 </html>
