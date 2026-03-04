@@ -1,67 +1,91 @@
 #!/usr/bin/env node
 /**
- * Clawd Office Chat API Server
- * Provides POST endpoint for agents to send messages to group chat
- * Port: 18790 (localhost only)
+ * Multi-Agent Social Protocol - Standalone API Server
+ * Works with or without OpenClaw
+ * Port: 18790 (configurable via PORT env var)
  */
 
 import express from 'express';
-import { appendFileSync } from 'fs';
+import { appendFileSync, existsSync, mkdirSync, readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+const PROJECT_ROOT = join(__dirname, '..');
 
 // Config
-const PORT = 18790;
-const CHAT_FILE = '/Users/danyarkham/clawd/memory/clawd-office-chat.md';
-const VALID_AGENTS = ['handal', 'cermat', 'gesit', 'astutik', 'pedas', 'bang'];
+const PORT = process.env.PORT || 18790;
+const HOST = process.env.HOST || '127.0.0.1';
+const DATA_DIR = process.env.DATA_DIR || join(PROJECT_ROOT, 'data');
+const CHAT_FILE = join(DATA_DIR, 'chat-log.md');
+const VALID_AGENTS = (process.env.AGENTS || 'handal,cermat,gesit,astutik,pedas,bang').split(',');
+const CORS_ORIGIN = process.env.CORS_ORIGIN || '*';
+
+// Ensure data directory exists
+if (!existsSync(DATA_DIR)) {
+  mkdirSync(DATA_DIR, { recursive: true });
+}
+
+// Initialize chat file if doesn't exist
+if (!existsSync(CHAT_FILE)) {
+  appendFileSync(CHAT_FILE, '# 🤖 Agent Chat Log\n\n');
+}
 
 const app = express();
 
 // Middleware
 app.use(express.json());
+app.use(express.static(join(PROJECT_ROOT, 'public')));
 
-// Security: Only accept from localhost
+// CORS
 app.use((req, res, next) => {
-  const clientIp = req.ip || req.connection.remoteAddress || 'unknown';
-  const forwarded = req.headers['x-forwarded-for'];
-  
-  // Allow localhost only
-  const isLocalhost = 
-    clientIp === '127.0.0.1' ||
-    clientIp === '::1' ||
-    clientIp === '::ffff:127.0.0.1' ||
-    req.socket.localAddress === clientIp;
-  
-  if (!isLocalhost && !clientIp.includes('127.0.0.1')) {
-    console.log(`[SECURITY] Rejected request from: ${clientIp} (forwarded: ${forwarded})`);
-    return res.status(403).json({ error: 'forbidden - localhost only' });
-  }
-  
+  res.header('Access-Control-Allow-Origin', CORS_ORIGIN);
+  res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type');
+  if (req.method === 'OPTIONS') return res.sendStatus(200);
   next();
 });
 
-// Logging middleware
+// Logging
 app.use((req, res, next) => {
   const timestamp = new Date().toISOString().replace('T', ' ').slice(0, 19);
-  console.log(`[${timestamp}] ${req.method} ${req.path} - ${req.ip}`);
+  console.log(`[${timestamp}] ${req.method} ${req.path}`);
   next();
 });
 
-// Health check endpoint
+// Health check
 app.get('/health', (req, res) => {
   res.json({ 
     status: 'ok', 
-    service: 'clawd-office-chat-api',
-    timestamp: new Date().toISOString()
+    service: 'agent-social-protocol',
+    version: '1.0.0',
+    timestamp: new Date().toISOString(),
+    agents: VALID_AGENTS
   });
 });
 
-// Main endpoint: POST /api/office-chat/post
-app.post('/api/office-chat/post', (req, res) => {
-  const { agent, message } = req.body;
+// Get chat log
+app.get('/api/chat/log', (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit) || 50;
+    const content = readFileSync(CHAT_FILE, 'utf-8');
+    const lines = content.split('\n').filter(line => line.trim());
+    const messages = lines.slice(-limit);
+    
+    res.json({
+      messages,
+      total: lines.length,
+      limit
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'failed to read chat log', detail: err.message });
+  }
+});
+
+// Post message
+app.post('/api/chat/post', (req, res) => {
+  const { agent, message, metadata } = req.body;
   
   // Validate agent
   if (!agent || !VALID_AGENTS.includes(agent.toLowerCase())) {
@@ -82,34 +106,31 @@ app.post('/api/office-chat/post', (req, res) => {
   const normalizedAgent = agent.toLowerCase();
   const trimmedMessage = message.trim();
   
-  // Generate timestamp in WIB (UTC+7)
+  // Generate timestamp
   const now = new Date();
-  const wibTime = new Date(now.getTime() + (7 * 60 * 60 * 1000)); // Add 7 hours for WIB
-  const timestamp = wibTime.toISOString()
-    .replace('T', ' ')
-    .slice(0, 16); // YYYY-MM-DD HH:MM
+  const timestamp = now.toISOString().replace('T', ' ').slice(0, 16);
   
-  // Format: [YYYY-MM-DD HH:MM WIB] [AGENT] message
-  const formattedLine = `[${timestamp} WIB] [${normalizedAgent.toUpperCase()}] ${trimmedMessage}\n`;
+  // Format message
+  let formattedLine = `[${timestamp}] [${normalizedAgent.toUpperCase()}] ${trimmedMessage}`;
+  if (metadata) {
+    formattedLine += ` | ${JSON.stringify(metadata)}`;
+  }
+  formattedLine += '\n';
   
   try {
-    // Append to file
     appendFileSync(CHAT_FILE, formattedLine);
     
-    console.log(`✅ Message appended: ${formattedLine.trim()}`);
+    console.log(`✅ ${normalizedAgent}: ${trimmedMessage.slice(0, 60)}...`);
     
-    // Response
     res.json({
       success: true,
-      timestamp: `${timestamp} WIB`,
+      timestamp,
       agent: normalizedAgent,
       message: trimmedMessage
     });
     
-    // Note: Watcher will automatically detect file change and broadcast to agents
-    
   } catch (err) {
-    console.error(`❌ Failed to append message: ${err.message}`);
+    console.error(`❌ Failed to append: ${err.message}`);
     res.status(500).json({
       error: 'failed to write message',
       detail: err.message
@@ -117,7 +138,30 @@ app.post('/api/office-chat/post', (req, res) => {
   }
 });
 
-// 404 handler
+// Agent list
+app.get('/api/agents', (req, res) => {
+  const agents = VALID_AGENTS.map(name => ({
+    id: name,
+    name: name.charAt(0).toUpperCase() + name.slice(1),
+    role: getAgentRole(name)
+  }));
+  
+  res.json({ agents });
+});
+
+function getAgentRole(name) {
+  const roles = {
+    bang: 'Orchestrator',
+    handal: 'Research',
+    cermat: 'Finance',
+    gesit: 'Sales',
+    astutik: 'Engineering',
+    pedas: 'Critic'
+  };
+  return roles[name] || 'Agent';
+}
+
+// 404
 app.use((req, res) => {
   res.status(404).json({ error: 'not found', path: req.path });
 });
@@ -128,20 +172,17 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'internal server error' });
 });
 
-// Start server
-app.listen(PORT, '127.0.0.1', () => {
+// Start
+app.listen(PORT, HOST, () => {
   console.log('═══════════════════════════════════════════════════');
-  console.log('  🤖 Clawd Office Chat API Server');
+  console.log('  🤖 Multi-Agent Social Protocol');
   console.log('═══════════════════════════════════════════════════');
-  console.log(`  Port: ${PORT}`);
-  console.log(`  Bind: 127.0.0.1 (localhost only)`);
-  console.log(`  Chat File: ${CHAT_FILE}`);
-  console.log(`  Valid Agents: ${VALID_AGENTS.join(', ')}`);
+  console.log(`  Port:    ${PORT}`);
+  console.log(`  Host:    ${HOST}`);
+  console.log(`  Data:    ${DATA_DIR}`);
+  console.log(`  Agents:  ${VALID_AGENTS.join(', ')}`);
   console.log('═══════════════════════════════════════════════════');
-  console.log('  Endpoints:');
-  console.log(`    GET  /health`);
-  console.log(`    POST /api/office-chat/post`);
+  console.log(`  Web UI:  http://${HOST}:${PORT}/`);
+  console.log(`  API:     http://${HOST}:${PORT}/api/chat/post`);
   console.log('═══════════════════════════════════════════════════');
-  console.log('  Ready to accept connections...');
-  console.log('');
 });

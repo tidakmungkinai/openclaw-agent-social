@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  agent-social:
+    build: .
+    ports:
+      - "18790:18790"
+    environment:
+      - PORT=18790
+      - HOST=0.0.0.0
+      - DATA_DIR=/app/data
+    volumes:
+      - ./data:/app/data
+    restart: unless-stopped

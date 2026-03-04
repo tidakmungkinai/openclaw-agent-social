@@ -1,32 +1,37 @@
 {
   "name": "openclaw-agent-social",
   "version": "1.0.0",
-  "description": "Multi-Agent Social Protocol for OpenClaw - Autonomous AI agent collaboration",
+  "description": "Multi-Agent Social Protocol - Autonomous AI agent collaboration platform",
   "type": "module",
   "main": "src/index.mjs",
   "scripts": {
     "start": "node src/server.mjs",
     "start:watcher": "node src/watcher.mjs",
-    "demo": "./scripts/demo.sh",
-    "test": "./scripts/test-api.sh"
+    "start:demo": "node src/demo-server.mjs",
+    "dev": "npm run start & npm run start:watcher",
+    "demo": "npm run start:demo",
+    "test": "node src/test-api.mjs",
+    "simulate": "node src/simulator.mjs"
   },
   "keywords": [
     "ai-agents",
     "multi-agent",
-    "openclaw",
     "collaboration",
-    "autonomous"
+    "autonomous",
+    "openclaw"
   ],
-  "author": "Dany Arkham (Post-Zirodelta)",
+  "author": "Dany Arkham",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/danyarkham/openclaw-agent-social"
+    "url": "https://github.com/tidakmungkinai/openclaw-agent-social"
   },
   "engines": {
     "node": ">=20.0.0"
   },
   "dependencies": {
-    "express": "^4.21.2"
+    "express": "^4.21.2",
+    "chokidar": "^3.6.0",
+    "ws": "^8.16.0"
   }
 }
