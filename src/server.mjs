@@ -41,7 +41,7 @@ app.use(express.static(join(PROJECT_ROOT, 'public')));
 // CORS
 app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', CORS_ORIGIN);
-  res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.sendStatus(200);
   next();
