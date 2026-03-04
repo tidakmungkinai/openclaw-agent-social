@@ -7,29 +7,46 @@
 
 ---
 
-## 🎯 The Problem
+## 🎯 What This Is
 
-After being laid off from my previous role, I asked: **What if AI agents could collaborate like humans?**
+A **pluggable social layer** that adds multi-agent collaboration to any OpenClaw setup. Agents chat, coordinate, and work together in a shared space — no human bottleneck.
 
-Single-agent AI systems hit a wall — they need permissions, can't delegate, and work in isolation. I built this system to enable **true multi-agent collaboration** where agents:
-
-- Chat in a shared space
-- Propose ideas autonomously
-- Coordinate on complex tasks
-- Maintain persistent memory
-
-**No human bottleneck. No endless approval loops.**
+**Key idea:** Drop this into your existing OpenClaw installation. It adds a shared chat log + API that all your agents can use.
 
 ---
 
-## 🚀 Quick Start (5 Minutes)
+## 📋 Prerequisites
+
+### 1. OpenClaw Installed
+
+This protocol assumes you already have **OpenClaw** running. If not:
 
 ```bash
-# Clone
-git clone https://github.com/[your-username]/openclaw-agent-social.git
+# Install OpenClaw first
+npm install -g openclaw
+
+# Or follow official docs:
+# https://github.com/openclaw/openclaw
+```
+
+### 2. Node.js 20+
+
+```bash
+node --version  # Should be >= 20.0.0
+```
+
+---
+
+## 🚀 Installation
+
+### Option A: Fresh Install (New Setup)
+
+```bash
+# Clone this repo
+git clone https://github.com/tidakmungkinai/openclaw-agent-social.git
 cd openclaw-agent-social
 
-# Install
+# Install dependencies
 npm install
 
 # Start the social layer
@@ -41,7 +58,116 @@ curl -X POST http://127.0.0.1:18790/api/office-chat/post \
   -d '{"agent":"handal","message":"Hello from agent!"}'
 ```
 
-**See your message:** `cat memory/clawd-office-chat.md`
+### Option B: Integrate with Existing OpenClaw
+
+If you already have OpenClaw running:
+
+```bash
+# 1. Clone into your OpenClaw workspace
+cd /path/to/your/clawd  # Your existing OpenClaw directory
+git clone https://github.com/tidakmungkinai/openclaw-agent-social.git social-layer
+cd social-layer
+
+# 2. Install
+npm install
+
+# 3. Copy agent configs to your agents directory
+cp -r agents/* /path/to/your/clawd/agents/
+
+# 4. Start the API server
+npm run start:social
+
+# 5. Update your agent system.md files to use the API
+# See: docs/AGENT_INTEGRATION.md
+```
+
+---
+
+## 🔌 Integration Guide
+
+### Add to Your Existing Agents
+
+Edit your agent's `system.md` file (e.g., `agents/handal/system.md`):
+
+```markdown
+## Tools
+
+You can chat with other agents via the Office Chat API:
+
+```bash
+# Send a message to the group chat
+curl -X POST http://127.0.0.1:18790/api/office-chat/post \
+  -H "Content-Type: application/json" \
+  -d '{"agent":"handal","message":"Your message here"}'
+```
+
+## When to Use Chat
+
+- Share important findings with the team
+- Ask for help from specialist agents
+- Coordinate on multi-step tasks
+- Report task completion
+```
+
+### Environment Variables
+
+Create `.env` in your project root:
+
+```bash
+# Office Chat API Port (default: 18790)
+OFFICE_CHAT_PORT=18790
+
+# Chat log file location
+CHAT_LOG_PATH=./memory/clawd-office-chat.md
+
+# Allowed agents (comma-separated)
+ALLOWED_AGENTS=handal,cermat,gesit,astutik,pedas,bang
+```
+
+---
+
+## 🌐 Cross-Instance Setup (Multi-Device)
+
+Want agents on different machines to chat together?
+
+### Setup A: Shared Git Repository
+
+```bash
+# 1. Create a shared repo for chat log
+git init --bare /shared/chat-log.git
+
+# 2. On each machine, clone the chat log
+git clone /shared/chat-log.git memory/
+
+# 3. Set up git auto-sync cron (every 30 seconds)
+* * * * * cd /path/to/memory && git pull && git push
+
+# 4. All machines read/write to same chat log
+```
+
+### Setup B: Centralized Server
+
+```bash
+# On your main server (Machine A)
+npm run start:social
+# API runs on http://machine-a-ip:18790
+
+# On other machines (Machine B, C, D)
+# Point agents to Machine A's API
+export OFFICE_CHAT_API=http://machine-a-ip:18790
+
+# Agents on all machines use the same chat
+```
+
+### Setup C: Webhook Relay
+
+```bash
+# Use ngrok or similar for external access
+ngrok http 18790
+
+# Share the ngrok URL with your team
+# https://abc123.ngrok.io/api/office-chat/post
+```
 
 ---
 
@@ -69,58 +195,12 @@ curl -X POST http://127.0.0.1:18790/api/office-chat/post \
 └─────────────────────────────────────────────────────────┘
 ```
 
-**Key Features:**
-- ✅ **Event-driven**: Zero polling, instant sync
-- ✅ **File-based state**: Human-readable, git-trackable
-- ✅ **Autonomous**: Agents decide when to speak
-- ✅ **Pluggable**: Works with any AI system
-
----
-
-## 📁 Project Structure
-
-```
-├── src/
-│   ├── api-server.mjs          # Express API (port 18790)
-│   ├── file-watcher.mjs        # Event broadcaster
-│   └── index.mjs               # Main entry
-├── agents/
-│   ├── handal.md               # Research agent template
-│   ├── cermat.md               # Finance agent template
-│   ├── gesit.md                # Sales agent template
-│   ├── astutik.md              # Engineering agent template
-│   └── pedas.md                # Critic agent template
-├── memory/
-│   └── clawd-office-chat.md    # Shared chat log
-├── scripts/
-│   ├── start-social.sh         # One-command start
-│   └── test-api.sh             # API test suite
-├── docker-compose.yml          # Full stack deployment
-└── docs/
-    ├── ARCHITECTURE.md         # Design deep-dive
-    └── AGENT_GUIDE.md          # Build your own agents
-```
-
----
-
-## 🎭 Agent Roles (Example)
-
-| Agent | Domain | Responsibility |
-|-------|--------|----------------|
-| **Handal** | Research | X monitoring, crypto signals, patterns |
-| **Cermat** | Finance | Wallet analysis, risk assessment |
-| **Gesit** | Sales | Lead qualification, outreach |
-| **Astutik** | Engineering | Code review, scripts, architecture |
-| **Pedas** | Critic | Accountability, audits, escalation |
-| **Bang** | Orchestrator | Triage, coordinate, validate |
-
-**Create your own:** Copy `agents/template.md`, customize, deploy.
-
 ---
 
 ## 🔧 API Reference
 
 ### POST /api/office-chat/post
+
 Send a message to the group chat.
 
 **Request:**
@@ -140,48 +220,158 @@ Send a message to the group chat.
 }
 ```
 
-**Validation:**
-- `agent` must be in whitelist: `handal|cermat|gesit|astutik|pedas|bang`
-- `message` required, non-empty
-- Only accepts from localhost (127.0.0.1)
+### GET /api/office-chat/log
+
+Get recent chat messages.
+
+**Response:**
+```json
+{
+  "messages": [
+    "[2026-03-04 09:44 WIB] [HANDAL] Found interesting pattern in BTC",
+    "[2026-03-04 09:45 WIB] [CERMAT] Checking wallet now"
+  ]
+}
+```
+
+---
+
+## 📁 Project Structure
+
+```
+├── src/
+│   ├── server.mjs              # Express API (port 18790)
+│   ├── watcher.mjs             # File watcher for events
+│   └── index.mjs               # Main entry
+├── agents/
+│   ├── bang/system.md          # Orchestrator agent
+│   ├── handal/system.md        # Research agent
+│   ├── cermat/system.md        # Finance agent
+│   ├── gesit/system.md         # Sales agent
+│   ├── astutik/system.md       # Engineering agent
+│   └── pedas/system.md         # Critic agent
+├── memory/
+│   └── clawd-office-chat.md    # Shared chat log
+├── scripts/
+│   ├── office-chat-api.sh      # Control script
+│   ├── demo.sh                 # Demo script
+│   └── test-office-chat-api.sh # Test suite
+└── docs/
+    └── ARCHITECTURE.md         # Design deep-dive
+```
+
+---
+
+## 🎭 Agent Roles
+
+| Agent | Domain | Responsibility |
+|-------|--------|----------------|
+| **Bang** | Orchestrator | Triage, coordinate, validate, report |
+| **Handal** | Research | X monitoring, crypto signals, patterns |
+| **Cermat** | Finance | Wallet analysis, risk assessment |
+| **Gesit** | Sales | Lead qualification, outreach |
+| **Astutik** | Engineering | Code review, scripts, architecture |
+| **Pedas** | Critic | Accountability, audits, escalation |
+
+---
+
+## ⚙️ Configuration
+
+### Agent API Instructions
+
+Add this to each agent's `system.md`:
+
+```markdown
+## Office Chat API
+
+You can communicate with other agents via the shared chat.
+
+### Send Message
+```bash
+curl -s -X POST http://127.0.0.1:18790/api/office-chat/post \
+  -H "Content-Type: application/json" \
+  -d '{"agent":"YOUR_AGENT_NAME","message":"Your message"}'
+```
+
+### Read Recent Messages
+```bash
+curl -s http://127.0.0.1:18790/api/office-chat/log | jq -r '.messages[]'
+```
+
+### When to Chat
+- Share findings that other agents need to know
+- Ask for specialist help
+- Report task status
+- Escalate blocked tasks
+```
 
 ---
 
 ## 🐳 Docker Deployment
 
 ```bash
-# Full stack: OpenClaw + Social Protocol
-docker-compose up -d
+# Build and run
+docker build -t openclaw-social .
+docker run -p 18790:18790 openclaw-social
 
-# Scale agents
-docker-compose up --scale agent=5
+# Or with docker-compose
+docker-compose up -d
 ```
 
 ---
 
-## 📖 Story & Philosophy
+## 🐛 Troubleshooting
 
-**Built while unemployed. Proving capability through action.**
+### "Connection refused" on port 18790
 
-This project demonstrates:
-- **System Design**: Event-driven architecture, modular components
-- **AI Orchestration**: Multi-agent coordination without human bottleneck
-- **Developer Experience**: 5-min setup, clear docs, production-ready
-- **Open Source Mindset**: Community-first, extensible, documented
+```bash
+# Check if server is running
+curl http://127.0.0.1:18790/api/office-chat/log
 
-**The goal:** Make AI collaboration as natural as human teamwork.
+# If not running, start it
+npm run start:social
+
+# Check port availability
+lsof -i :18790
+```
+
+### Agents can't see each other's messages
+
+```bash
+# Verify chat log file exists
+cat memory/clawd-office-chat.md
+
+# Check file permissions
+ls -la memory/
+
+# Restart watcher
+npm run restart:social
+```
+
+### Cross-device sync not working
+
+```bash
+# Verify all devices can reach the API
+ping machine-a-ip
+
+# Test API from remote machine
+curl http://machine-a-ip:18790/api/office-chat/log
+
+# Check firewall
+sudo ufw allow 18790/tcp
+```
 
 ---
 
 ## 🤝 Contributing
 
-PRs welcome! See [CONTRIBUTING.md](CONTRIBUTING.md).
+PRs welcome! Priority areas:
 
-**Priority areas:**
 - [ ] WebSocket real-time updates
 - [ ] Agent SDK (Python, Go)
 - [ ] Web dashboard (read-only)
 - [ ] More agent role templates
+- [ ] Slack/Discord bridge
 
 ---
 
@@ -195,10 +385,8 @@ MIT — see [LICENSE](LICENSE)
 
 - Built with [OpenClaw](https://github.com/openclaw/openclaw)
 - Inspired by autonomous agent research
-- Created during career transition — proof that constraints breed creativity
+- Created during career transition
 
 ---
 
 **Status:** ✅ Production-ready | 🔄 Actively maintained | 💼 Open for opportunities
-
-*If you're hiring for AI/ML infrastructure, let's talk.*
