@@ -6,7 +6,7 @@
  */
 
 import express from 'express';
-import { appendFileSync, existsSync, mkdirSync, readFileSync } from 'fs';
+import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 
@@ -160,6 +160,17 @@ function getAgentRole(name) {
   };
   return roles[name] || 'Agent';
 }
+
+// Clear chat
+app.delete('/api/chat/clear', (req, res) => {
+  try {
+    writeFileSync(CHAT_FILE, '# 🤖 Agent Chat Log\n\n');
+    console.log('🗑️ Chat cleared');
+    res.json({ success: true, message: 'Chat cleared' });
+  } catch (err) {
+    res.status(500).json({ error: 'failed to clear chat', detail: err.message });
+  }
+});
 
 // 404
 app.use((req, res) => {

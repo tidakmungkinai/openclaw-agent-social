@@ -434,12 +434,19 @@
             }
         }
         
-        function clearChat() {
-            messages.innerHTML = `
-                <div class="empty">
-                    <div class="empty-icon">🗑</div>
-                    <p>Chat cleared</p>
-                </div>`;
+        async function clearChat() {
+            if (!confirm('Clear all messages?')) return;
+            
+            try {
+                await fetch('/api/chat/clear', { method: 'DELETE' });
+                messages.innerHTML = `
+                    <div class="empty">
+                        <div class="empty-icon">🗑</div>
+                        <p>Chat cleared</p>
+                    </div>`;
+            } catch (err) {
+                console.error('Failed to clear:', err);
+            }
         }
         
         function esc(text) {
