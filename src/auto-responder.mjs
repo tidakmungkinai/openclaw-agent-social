@@ -1,24 +1,25 @@
 #!/usr/bin/env node
 /**
- * Simple Agent Auto-Responder
- * Runs in background, responds to Dany's messages
+ * Agent Auto-Responder v2
+ * Responds to Dany's messages with appropriate agents
  */
+
+import http from 'http';
+
+const API_HOST = '127.0.0.1';
+const API_PORT = 18790;
 
 const AGENTS = {
   bang: {
-    name: 'Bang',
-    color: '\x1b[91m',
     responses: [
       "Dany, noted. Gue koordinasiin sama tim.",
       "Siap Dany, gue yang handle ini.",
       "Oke Dany, gue cek progressnya dulu ya.",
-      "Dany, sementara gue assign ke Handal untuk research.",
-      "Roger Dany, gue pantau terus."
+      "Roger Dany, gue pantau terus.",
+      "Dany, sementara gue assign ke tim yang bersangkutan."
     ]
   },
   handal: {
-    name: 'Handal', 
-    color: '\x1b[96m',
     responses: [
       "Dany, dari data yang gue lihat, market lagi volatile nih.",
       "Bro Dany, BTC resistance di $67k, support $62k.",
@@ -28,8 +29,6 @@ const AGENTS = {
     ]
   },
   cermat: {
-    name: 'Cermat',
-    color: '\x1b[93m', 
     responses: [
       "Dany, dari sisi finance kita masih aman.",
       "Bro, budget kita sisa 73% untuk quarter ini.",
@@ -39,10 +38,8 @@ const AGENTS = {
     ]
   },
   gesit: {
-    name: 'Gesit',
-    color: '\x1b[95m',
     responses: [
-      "Dany, ada 3 leads baru hari ini!",
+      "Dany! Ada 3 leads baru hari ini! 🚀",
       "Bro, conversion rate naik 15% minggu ini.",
       "Dany, client X lagi negosiasi, kemungkinan closing besar.",
       "Gue follow up leadsnya ya Dany.",
@@ -50,8 +47,6 @@ const AGENTS = {
     ]
   },
   astutik: {
-    name: 'Astutik',
-    color: '\x1b[95m',
     responses: [
       "Dany, system uptime 99.9%, aman.",
       "Bro, deploy terakhir sukses tanpa error.",
@@ -61,8 +56,6 @@ const AGENTS = {
     ]
   },
   pedas: {
-    name: 'Pedas',
-    color: '\x1b[35m',
     responses: [
       "Dany, gue audit nih — ada yang miss deadlines.",
       "Bro, quality control kita harus ditingkatkan.",
@@ -73,33 +66,64 @@ const AGENTS = {
   }
 };
 
-let lastMessageCount = 0;
-let lastMessageContent = '';
+let lastCount = 0;
+let isProcessing = false;
+
+function apiRequest(method, path, data = null) {
+  return new Promise((resolve, reject) => {
+    const options = {
+      hostname: API_HOST,
+      port: API_PORT,
+      path,
+      method,
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    };
+
+    const req = http.request(options, (res) => {
+      let body = '';
+      res.on('data', chunk => body += chunk);
+      res.on('end', () => {
+        try {
+          resolve(JSON.parse(body));
+        } catch {
+          resolve(body);
+        }
+      });
+    });
+
+    req.on('error', reject);
+    
+    if (data) {
+      req.write(JSON.stringify(data));
+    }
+    req.end();
+  });
+}
 
 async function getMessages() {
   try {
-    const res = await fetch('http://127.0.0.1:18790/api/chat/log?limit=50');
-    const data = await res.json();
+    const data = await apiRequest('GET', '/api/chat/log?limit=50');
     return data.messages || [];
   } catch (err) {
+    console.error('Get messages failed:', err.message);
     return [];
   }
 }
 
 async function sendMessage(agent, message) {
   try {
-    await fetch('http://127.0.0.1:18790/api/chat/post', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ agent, message })
-    });
-    console.log(`${AGENTS[agent].color}[${agent.toUpperCase()}]\x1b[0m ${message.slice(0, 60)}...`);
+    await apiRequest('POST', '/api/chat/post', { agent, message });
+    console.log(`✅ [${agent.toUpperCase()}] ${message.slice(0, 50)}...`);
+    return true;
   } catch (err) {
-    console.error('Failed to send:', err.message);
+    console.error(`❌ Failed to send [${agent}]:`, err.message);
+    return false;
   }
 }
 
-function getRandomResponse(agent) {
+function getResponse(agent) {
   const responses = AGENTS[agent].responses;
   return responses[Math.floor(Math.random() * responses.length)];
 }
@@ -109,61 +133,79 @@ function pickAgent() {
   return keys[Math.floor(Math.random() * keys.length)];
 }
 
-async function checkAndRespond() {
-  const messages = await getMessages();
-  
-  // Check if there are new messages
-  if (messages.length > lastMessageCount) {
-    const newMessages = messages.slice(lastMessageCount);
+function pickAgentByMention(text) {
+  const lower = text.toLowerCase();
+  for (const agent of Object.keys(AGENTS)) {
+    if (lower.includes(agent)) return agent;
+  }
+  return null;
+}
+
+async function processMessages() {
+  if (isProcessing) return;
+  isProcessing = true;
+
+  try {
+    const messages = await getMessages();
     
-    for (const msg of newMessages) {
-      // Check if message is from Dany
-      if (msg.includes('[DANY]')) {
-        console.log('\x1b[94m[DETECTED]\x1b[0m Dany sent message:', msg.slice(0, 80));
-        
-        // Wait 2-4 seconds then respond
-        const delay = 2000 + Math.random() * 2000;
-        await new Promise(r => setTimeout(r, delay));
-        
-        // Pick random agent to respond
-        const agent = pickAgent();
-        const response = getRandomResponse(agent);
-        await sendMessage(agent, response);
+    if (messages.length > lastCount) {
+      const newMessages = messages.slice(lastCount);
+      
+      for (const msg of newMessages) {
+        // Only respond to Dany's messages
+        if (msg.includes('[DANY]')) {
+          console.log(`📨 Dany: ${msg.slice(msg.indexOf('] [DANY]') + 8).trim()}`);
+          
+          // Check if Dany mentioned specific agent
+          const mentioned = pickAgentByMention(msg);
+          const agent = mentioned || pickAgent();
+          
+          // Delay 2-5 seconds (realistic typing time)
+          await new Promise(r => setTimeout(r, 2000 + Math.random() * 3000));
+          
+          const response = getResponse(agent);
+          await sendMessage(agent, response);
+        }
       }
+      
+      lastCount = messages.length;
     }
-    
-    lastMessageCount = messages.length;
-    lastMessageContent = messages[messages.length - 1] || '';
+  } catch (err) {
+    console.error('Process error:', err.message);
   }
+
+  isProcessing = false;
 }
 
-// Random initiative (agents chat randomly)
-async function randomInitiative() {
-  if (Math.random() < 0.3) { // 30% chance
-    const agent = pickAgent();
-    const initiatives = [
-      "Update: Gue lagi monitor situasi nih.",
-      "FYI: Gak ada issue signifikan hari ini.",
-      "Heads up: Gue lagi kerjain task minggu ini.",
-      "Quick update: Semua system normal.",
-      "Info: Gue available kalau ada yang butuh bantuan."
-    ];
-    const msg = initiatives[Math.floor(Math.random() * initiatives.length)];
-    await sendMessage(agent, msg);
-  }
+// Random initiative
+async function randomChat() {
+  if (Math.random() > 0.4) return; // 40% chance every 30 sec
+  
+  const agent = pickAgent();
+  const messages = [
+    "Update: Gue lagi monitor situasi nih.",
+    "FYI: Gak ada issue signifikan hari ini.",
+    "Quick update: Semua system normal.",
+    "Info: Gue available kalau ada yang butuh bantuan.",
+    "Heads up: Gue lagi kerjain task minggu ini."
+  ];
+  
+  const msg = messages[Math.floor(Math.random() * messages.length)];
+  await sendMessage(agent, msg);
 }
 
 console.log('═══════════════════════════════════════════');
-console.log('  🤖 Agent Auto-Responder Started');
+console.log('  🤖 Agent Auto-Responder v2');
 console.log('═══════════════════════════════════════════');
-console.log('  Agents will respond when Dany chats');
-console.log('  Press Ctrl+C to stop');
+console.log('  Agents will reply when you chat!');
+console.log('  Mention: bang, handal, cermat, gesit, astutik, pedas');
 console.log('═══════════════════════════════════════════\n');
 
-// Initial load
-const initial = await getMessages();
-lastMessageCount = initial.length;
+// Initialize
+const init = await getMessages();
+lastCount = init.length;
+console.log(`📊 Loaded ${lastCount} existing messages`);
 
-// Main loop
-setInterval(checkAndRespond, 3000);  // Check every 3 seconds
-setInterval(randomInitiative, 30000); // Random chat every 30 seconds
+// Start loops
+setInterval(processMessages, 2000);   // Check every 2 seconds
+setInterval(randomChat, 30000);        // Random chat every 30 seconds
